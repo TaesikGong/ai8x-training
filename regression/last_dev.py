@@ -1,6 +1,6 @@
 ###################################################################################################
 #
-# Copyright © 2023 Analog Devices, Inc. All Rights Reserved.
+# Copyright (C) 2023 Analog Devices, Inc. All Rights Reserved.
 # This software is proprietary and confidential to Analog Devices, Inc. and its licensors.
 #
 ###################################################################################################
@@ -12,14 +12,13 @@ import datetime
 import os
 import subprocess
 
-import git
+import requests
 import yaml
-from git.exc import InvalidGitRepositoryError
 
 
 def joining(lst):
     """
-      Join based on the ' ' delimiter
+    Join based on the ' ' delimiter
     """
     join_str = ' '.join(lst)
     return join_str
@@ -68,11 +67,12 @@ def dev_scripts(script_pth, output_file_pth):
                     j = temp.index('--model')
                     k = temp.index('--dataset')
 
-                    if '--qat-policy' in temp:
-                        x = temp.index('--qat-policy')
-                        temp[x+1] = "policies/qat_policy.yaml"
-                    else:
-                        temp.insert(-1, ' --qat-policy policies/qat_policy.yaml')
+                    if config["Qat_Test"]:
+                        if '--qat-policy' in temp:
+                            x = temp.index('--qat-policy')
+                            temp[x+1] = "policies/qat_policy.yaml"
+                        else:
+                            temp.insert(-1, ' --qat-policy policies/qat_policy.yaml')
 
                     log_model = temp[j+1]
                     log_data = temp[k+1]
@@ -91,18 +91,27 @@ def dev_scripts(script_pth, output_file_pth):
                     if log_data == "ai85tinierssdface":
                         continue
 
-                    temp[i+1] = str(config[log_data][log_model]["epoch"])
+                    try:
+                        temp[i+1] = str(config[log_data][log_model]["epoch"])
+                    except KeyError:
+                        print(f"\033[93m\u26A0\033[0m Warning: {temp[j+1]} model is" +
+                              " missing information in test configuration files.")
+                        continue
 
                     if '--deterministic' not in temp:
                         temp.insert(-1, '--deterministic')
 
                     temp.insert(-1, '--name ' + log_name)
 
-                    data_name = temp[k+1]
-                    if data_name in config and "datapath" in config[data_name]:
+                    try:
                         path_data = config[log_data]["datapath"]
-                        temp.insert(-1, '--data ' + path_data)
+                        temp[i+1] = str(config[log_data][log_model]["epoch"])
+                    except KeyError:
+                        print(f"\033[93m\u26A0\033[0m Warning: {temp[j+1]} model is" +
+                              " missing information in test configuration files.")
+                        continue
 
+                    temp.insert(-1, '--data ' + path_data)
                     temp.append("\n")
                     contents = joining(temp)
                     output_file.write(contents)
@@ -112,15 +121,19 @@ def dev_checkout():
     """
     Checkout the last developed code
     """
-    repo_url = "https://github.com/MaximIntegratedAI/ai8x-training.git"
-    local_path = pathconfig['local_path']
+    repository = 'MaximIntegratedAI/ai8x-training'
+    branch = 'develop'
 
-    try:
-        repo = git.Repo(local_path)
-    except InvalidGitRepositoryError:
-        repo = git.Repo.clone_from(repo_url, local_path, branch="develop", recursive=True)
+    # Send a GET request to the GitHub API to retrieve the commit data
+    url = f'https://api.github.com/repos/{repository}/commits?sha={branch}'
+    response = requests.get(url)
 
-    commit_hash = repo.heads.develop.object.hexsha
+    if response.status_code == 200:
+        commit_hash = response.json()[0]['sha']
+        print(f"The hash of the last commit in the '{branch}' branch is: {commit_hash}")
+    else:
+        print(f"Failed to retrieve commit information. Status code: {response.status_code}")
+
     commit_num_path = pathconfig['commit_num_path']
 
     try:
@@ -132,21 +145,16 @@ def dev_checkout():
     if commit_hash != saved_commit_hash:
         with open(commit_num_path, "w", encoding='utf-8') as file:
             file.write(commit_hash)
-            repo.remotes.origin.pull("develop")
-
             dev_scripts(script_path, output_file_path)
             cmd_command = "bash " + output_file_path
             subprocess.run(cmd_command, shell=True, check=True)
-
-            path_command = "cd " + local_path
-            subprocess.run(path_command, shell=True, check=True)
 
             source_path = pathconfig["source_path"]
             destination_path = os.path.join(
                 pathconfig["destination_path"],
                 datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             )
-            subprocess.run(['mv', source_path, destination_path], check=True)
+            subprocess.run(['/bin/mv', source_path, destination_path], check=True)
 
 
 dev_checkout()

@@ -95,6 +95,8 @@ class QuantizationFunction(Function):
     nearest integer.
     The backward pass is straight through.
     """
+    # pylint: disable=abstract-method
+
     @staticmethod
     def forward(_, x, bits=8, extra_bit_shift=0):  # pylint: disable=arguments-differ
         """Forward prop"""
@@ -138,6 +140,8 @@ class FloorFunction(Function):
     The forward pass returns the integer floor.
     The backward pass is straight through.
     """
+    # pylint: disable=abstract-method
+
     @staticmethod
     def forward(_, x):  # pylint: disable=arguments-differ
         """Forward prop"""
@@ -158,6 +162,8 @@ class AvgPoolFloorFunction(Function):
     ceil for negative numbers.
     The backward pass is straight through.
     """
+    # pylint: disable=abstract-method
+
     @staticmethod
     def forward(_, x):  # pylint: disable=arguments-differ
         """Forward prop"""
@@ -207,6 +213,8 @@ class RoundFunction(Function):
     The forward pass returns the integer rounded.
     The backward pass is straight through.
     """
+    # pylint: disable=abstract-method
+
     @staticmethod
     def forward(_, x):  # pylint: disable=arguments-differ
         """Forward prop"""
@@ -438,7 +446,7 @@ class One(nn.Module):
     """
     def forward(self, x):  # pylint: disable=arguments-differ
         """Forward prop"""
-        return torch.ones(1).to(x.device)
+        return torch.ones(1, device=x.device)
 
 
 class WeightScale(nn.Module):
@@ -1814,6 +1822,47 @@ def update_model(m):
     m.apply(_update_model)
 
 
+def update_optimizer(m, optimizer):
+    """
+    Update optimizer after model 'm' had a batchnorm fusion.
+    This is needed to update the optimizer state_dict to match the new model parameters.
+    """
+    old_state_dict = optimizer.state_dict()
+    old_groups = optimizer.param_groups
+    optimizer = type(optimizer)(m.parameters(), **optimizer.defaults)
+    new_state_dict = optimizer.state_dict()
+    groups = optimizer.param_groups
+
+    for x, g in enumerate(groups):
+        key_reduce = 0
+        for p in g['params']:
+            if (len(p.shape) == 1 and p.shape[0] == 1):
+                continue
+            nf_keys = []
+            for key in old_state_dict['state'].keys():
+                sub_keys = old_state_dict['state'][key].keys()
+                if old_groups[x]['params'][int(key)].shape == p.shape:
+                    for y, sub_key in enumerate(sub_keys):
+                        if y == 0:
+                            new_state_dict['state'][key-key_reduce] = \
+                                {sub_key: old_state_dict['state'][key][sub_key]}
+                        else:
+                            new_state_dict['state'][key-key_reduce][sub_key] = \
+                                old_state_dict['state'][key][sub_key]
+                    old_state_dict['state'].pop(key)
+                    break
+                nf_keys.append(key)
+                key_reduce += 1
+            for key in nf_keys:
+                old_state_dict['state'].pop(key)
+        for key in old_state_dict['param_groups'][x].keys():
+            if key != 'params':
+                new_state_dict['param_groups'][x][key] = \
+                    old_state_dict['param_groups'][x][key]
+    optimizer.load_state_dict(new_state_dict)
+    return optimizer
+
+
 def fuse_bn_layers(m):
     """
     Fuse the bn layers before the quantization aware training starts.
@@ -1834,9 +1883,9 @@ def fuse_bn_layers(m):
                 gamma = target_attr.bn.bias
 
                 if beta is None:
-                    beta = torch.ones(w.shape[0]).to(device)
+                    beta = torch.ones(w.shape[0], device=device)
                 if gamma is None:
-                    gamma = torch.zeros(w.shape[0]).to(device)
+                    gamma = torch.zeros(w.shape[0], device=device)
 
                 beta = 0.25 * beta
                 gamma = 0.25 * gamma
@@ -1888,3 +1937,18 @@ def onnx_export_prep(m, simplify=False):
                 setattr(m, attr_str, ScalerONNX())
 
     m.apply(_onnx_export_prep)
+
+
+class bayer_filter:
+    """
+    Implement bayer filter to rgb images
+    """
+    def __call__(self, img):
+        out = torch.zeros(1, img.shape[1], img.shape[2])
+
+        out[0, 0::2, 1::2] = img[2, 0::2, 1::2]
+        out[0, 0::2, 0::2] = img[1, 0::2, 0::2]
+        out[0, 1::2, 1::2] = img[1, 1::2, 1::2]
+        out[0, 1::2, 0::2] = img[0, 1::2, 0::2]
+
+        return out

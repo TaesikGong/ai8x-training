@@ -14,11 +14,13 @@ import hashlib
 import os
 import tarfile
 import urllib
+import urllib.error
+import urllib.request
 import warnings
 
 import numpy as np
 import torch
-from torch.utils.model_zoo import tqdm
+from torch.utils.model_zoo import tqdm  # type: ignore # tqdm exists in model_zoo
 from torchvision import transforms
 
 import librosa
@@ -359,11 +361,11 @@ def shift(audio, shift_sec, fs):
     return np.roll(audio, shift_count)
 
 
-def stretch(audio, rate=1):
-    """Stretchs audio with specified ratio.
+def stretch(audio, rate=1.):
+    """Stretches audio with specified ratio.
     """
     input_length = 16000
-    audio2 = librosa.effects.time_stretch(audio, rate)
+    audio2 = librosa.effects.time_stretch(audio, rate=rate)
     if len(audio2) > input_length:
         audio2 = audio2[:input_length]
     else:
@@ -377,14 +379,14 @@ def augment(audio, fs, verbose=False):
     """
     random_noise_var_coeff = np.random.uniform(0, 1)
     random_shift_time = np.random.uniform(-0.1, 0.1)
-    random_strech_coeff = np.random.uniform(0.8, 1.3)
+    random_stretch_coeff = np.random.uniform(0.8, 1.3)
 
-    aug_audio = stretch(audio, random_strech_coeff)
+    aug_audio = stretch(audio, random_stretch_coeff)
     aug_audio = shift(aug_audio, random_shift_time, fs)
     aug_audio = add_white_noise(aug_audio, random_noise_var_coeff)
     if verbose:
         print(f'random_noise_var_coeff: {random_noise_var_coeff:.2f}\nrandom_shift_time: \
-                {random_shift_time:.2f}\nrandom_strech_coeff: {random_strech_coeff:.2f}')
+                {random_shift_time:.2f}\nrandom_stretch_coeff: {random_stretch_coeff:.2f}')
     return aug_audio
 
 
