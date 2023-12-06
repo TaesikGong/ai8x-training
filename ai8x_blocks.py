@@ -73,9 +73,19 @@ class ResidualBottleneck(nn.Module):
                                                              padding=1, stride=stride,
                                                              bias=depthwise_bias, **kwargs)
             else:
-                self.conv2 = ai8x.FusedDepthwiseConv2dReLU(hidden_channels, hidden_channels, 3,
-                                                           padding=1, stride=stride,
-                                                           bias=depthwise_bias, **kwargs)
+                #TODO: apply skipping only for custom models
+
+                # self.conv2 = ai8x.FusedDepthwiseConv2dReLU(hidden_channels, hidden_channels, 3,
+                #                                            padding=1, stride=stride,
+                #                                            bias=depthwise_bias, **kwargs)
+                # self.conv2 = ai8x.FusedConv2dReLU(hidden_channels, hidden_channels, 3,
+                #                                            padding=1, stride=stride,
+                #                                            bias=depthwise_bias, **kwargs)
+                # self.conv2 = ai8x.FakeDepthwiseFusedConv2dReLU(hidden_channels, hidden_channels, 3,
+                #                                            padding=1, stride=stride,
+                #                                            bias=depthwise_bias, **kwargs)
+                pass
+
 
         else:
             if depthwise_bias:
@@ -86,12 +96,28 @@ class ResidualBottleneck(nn.Module):
                                                                     bias=depthwise_bias,
                                                                     **kwargs)
             else:
-                self.conv2 = ai8x.FusedMaxPoolDepthwiseConv2dReLU(hidden_channels,
-                                                                  hidden_channels,
-                                                                  3, padding=1, pool_size=stride,
-                                                                  pool_stride=stride,
-                                                                  bias=depthwise_bias,
-                                                                  **kwargs)
+                # TODO: apply skipping only for custom models
+
+                # self.conv2 = ai8x.FusedMaxPoolDepthwiseConv2dReLU(hidden_channels,
+                #                                                   hidden_channels,
+                #                                                   3, padding=1, pool_size=stride,
+                #                                                   pool_stride=stride,
+                #                                                   bias=depthwise_bias,
+                #                                                   **kwargs)
+                # self.conv2 = ai8x.FusedConv2dReLU(hidden_channels,
+                #                                                   hidden_channels,
+                #                                                   3, padding=1, pool_size=stride,
+                #                                                   pool_stride=stride,
+                #                                                   bias=depthwise_bias,
+                #                                                   **kwargs)
+                # self.conv2 = ai8x.FakeDepthwiseFusedConv2dReLU(hidden_channels,
+                #                                                   hidden_channels,
+                #                                                   3, padding=1, pool_size=stride,
+                #                                                   pool_stride=stride,
+                #                                                   bias=depthwise_bias,
+                #                                                   **kwargs)
+                pass
+
 
         self.conv3 = ai8x.FusedConv2dBN(hidden_channels, out_channels, 1, bias=bias, **kwargs)
 
@@ -111,7 +137,7 @@ class ResidualBottleneck(nn.Module):
     def forward(self, x):  # pylint: disable=arguments-differ
         """Forward prop"""
         y = self.conv1(x)
-        y = self.conv2(y)
+        # y = self.conv2(y) #TODO: apply skipping only for custom models
         y = self.conv3(y)
         return self.resid(y, x)
 
@@ -166,12 +192,30 @@ class MBConvBlock(nn.Module):
                                                           eps=1e-03, momentum=0.01, **kwargs)
         # Depthwise Convolution phase
         if fused is not True:
-            self.depthwise_conv = ai8x.FusedConv2dBNReLU(in_channels=out, out_channels=out,
-                                                         groups=out,  # groups makes it depthwise
-                                                         padding=1, kernel_size=kernel_size,
-                                                         stride=stride, batchnorm='Affine',
-                                                         bias=bias, eps=1e-03, momentum=0.01,
-                                                         **kwargs)
+            # TODO: apply skipping only for custom models
+
+            # self.depthwise_conv = ai8x.FusedConv2dBNReLU(in_channels=out, out_channels=out,
+            #                                              groups=out,  # groups makes it depthwise
+            #                                              padding=1, kernel_size=kernel_size,
+            #                                              stride=stride, batchnorm='Affine',
+            #                                              bias=bias, eps=1e-03, momentum=0.01,
+            #                                              **kwargs)
+
+            # self.depthwise_conv = ai8x.FusedConv2dBNReLU(in_channels=out, out_channels=out,
+            #                                              groups=1,  # avoid grouping
+            #                                              padding=1, kernel_size=kernel_size,
+            #                                              stride=stride, batchnorm='Affine',
+            #                                              bias=bias, eps=1e-03, momentum=0.01,
+            #                                              **kwargs)
+
+            # self.depthwise_conv = ai8x.FakeDepthwiseFusedConv2dBNReLU(in_channels=out, out_channels=out,
+            #                                              groups=1,  # avoid grouing
+            #                                              padding=1, kernel_size=kernel_size,
+            #                                              stride=stride, batchnorm='Affine',
+            #                                              bias=bias, eps=1e-03, momentum=0.01,
+            #                                              **kwargs)
+            pass
+
         # Squeeze and Excitation phase
         if self.has_se:
             num_squeezed_channels = max(1, int(in_channels * se_ratio))
@@ -185,7 +229,7 @@ class MBConvBlock(nn.Module):
         self.project_conv = ai8x.FusedConv2dBN(in_channels=out, out_channels=final_out,
                                                kernel_size=1, batchnorm='Affine', bias=bias,
                                                eps=1e-03, momentum=0.01, **kwargs)
-        # Skip connection
+        # Skip connection ### to remove residual connection, comment out this
         self.resid = ai8x.Add()
 
     def forward(self, inputs):
@@ -202,7 +246,8 @@ class MBConvBlock(nn.Module):
             x = self.expand_conv(inputs)
         # Depthwise Convolution layer
         if self.fused is not True:
-            x = self.depthwise_conv(x)
+            # x = self.depthwise_conv(x) #TODO: apply skipping only for custom models
+            pass
         # Squeeze and Excitation layers
         if self.has_se:
             x_squeezed = F.adaptive_avg_pool2d(x, 1)
@@ -211,7 +256,7 @@ class MBConvBlock(nn.Module):
             x = torch.sigmoid(x_squeezed) * x
         # Output Convolution layer
         x = self.project_conv(x)
-        # Skip connection
+        # Skip connection  ### to remove residual connection, comment out this
         input_filters, output_filters = self.in_channels, self.out_channels
         if self.stride == 1 and input_filters == output_filters:
             x = self.resid(x, inputs)
