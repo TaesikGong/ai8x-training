@@ -907,6 +907,20 @@ class FusedConv2dReLU(Conv2d):
         super().__init__(*args, activation='ReLU', **kwargs)
 
 
+class FakeDepthwiseFusedConv2dReLU(Conv2d):
+    """
+    Fused 2D Convolution and ReLU
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.groups = args[1]
+        new_args = (args[0], 1, *args[2:])
+        super().__init__(*new_args, activation='ReLU', **kwargs)
+
+    def forward(self, x):
+        out = super().forward(x)
+        return out.repeat(1, self.groups, 1, 1)
+
 class FusedConv2dBN(Conv2d):
     """
     Fused 2D Convolution and BatchNorm
@@ -925,7 +939,20 @@ class FusedConv2dBNReLU(FusedConv2dReLU):
         if 'batchnorm' not in kwargs:
             kwargs['batchnorm'] = 'Affine'
         super().__init__(*args, **kwargs)
+class FakeDepthwiseFusedConv2dBNReLU(FusedConv2dBNReLU):
+    """
+    Fused 2D Convolution and BatchNorm and ReLU
+    """
+    def __init__(self, *args, **kwargs):
+        self.groups = kwargs['out_channels']
+        kwargs['out_channels'] = 1
+        super().__init__(*args, **kwargs)
 
+    def forward(self, x):
+        #x: 13,192,16,16
+        #output: 13,1,16,16
+        out = super().forward(x)
+        return out.repeat(1, self.groups, 1, 1)
 
 class FusedConv2dAbs(Conv2d):
     """
