@@ -15,4 +15,5 @@ fi
 
 echo "Passing arguments to docker build: USER: $USER, UID: $UID, GID: $GID"
 
-docker build --build-arg USER=$USER --build-arg UID=$UID --build-arg GID=$GID -f Dockerfile -t taesik_ai8x-training .
+cd /home/taesik/git/ai8x-training/
+docker build --build-arg USER=$USER --build-arg UID=$UID --build-arg GID=$GID -f docker/Dockerfile -t taesik_ai8x-training .

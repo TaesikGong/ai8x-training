@@ -5,7 +5,7 @@ ARG UID
 ARG GID
 ARG DEBIAN_FRONTEND=noninteractive
 
-# personal apps
+# personally preferred apps
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
@@ -23,12 +23,8 @@ RUN apt-get update && apt-get install -y \
     screen \
     tmux
 
-RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${USER}" | chpasswd && adduser ${USER} sudo
-USER ${UID}:${GID}
-WORKDIR /home/${USER}
-
-# required apps
-RUN sudo apt-get install -y \
+# required apps for this project
+RUN apt-get install -y \
     make \
     build-essential \
     libssl-dev \
@@ -46,28 +42,34 @@ RUN sudo apt-get install -y \
     libffi-dev \
     liblzma-dev \
     libsndfile-dev \
-    portaudio19-dev \
+    portaudio19-dev
 
-# Miniconda
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-RUN bash miniconda.sh -b -p /home/${USER}/miniconda && \
-    rm miniconda.sh
-ENV PATH /home/${USER}/miniconda/bin:$PATH
-RUN conda update -y conda
-RUN conda create -y --name ai8x-training python=3.9
-SHELL ["conda", "run", "-n", "project", "/bin/bash", "-c"]
+RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${USER}" | chpasswd && adduser ${USER} sudo
 
+# Switch to the root user to run conda init and modify the non-root user's bashrc
+USER root
+RUN /opt/conda/bin/conda init bash
+COPY requirements-cu11.txt /home/${USER}/requirements-cu11.txt
+# Ensure the non-root user's .bashrc file activates the conda environment
+RUN echo "source /opt/conda/etc/profile.d/conda.sh" >> /home/${USER}/.bashrc && \
+    echo "conda activate ai8x-training" >> /home/${USER}/.bashrc
 
-# personal packages
-RUN pip install --no-cache-dir -U pip && \
-    pip install gpustat && \
-    pip install matplotlib && \
-    pip install tqdm && \
-    pip install pandas
+# Set user and workdir
+USER ${UID}:${GID}
+WORKDIR /home/${USER}
 
-# required packages
-RUN pip3 install -U pip wheel setuptools && \
-    pip3 install -r requirements-cu11.txt
+# Copy the requirements file into the Docker image
+COPY requirements-cu11.txt /home/${USER}/requirements-cu11.txt
 
-# Set the default command for the container (this can be changed to whatever command you need)
-CMD ["conda", "run", "-n", "project", "python", "-c", "print('Conda environment setup with project requirements is ready!')"]
+# Create conda env
+RUN conda create -y --name ai8x-training python=3.8.12
+
+# Use the environment for pip installations
+# Activate the Conda environment explicitly for the command where you need it
+RUN /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh && \
+                  conda activate ai8x-training && \
+                  pip install --no-cache-dir -U pip && \
+                  pip install gpustat matplotlib tqdm pandas && \
+                  pip install -U pip wheel setuptools && \
+                  pip install -r /home/${USER}/requirements-cu11.txt && \
+                  pip install -e git+https://github.com/MaximIntegratedAI/distiller.git@ea4436d#egg=distiller"

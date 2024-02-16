@@ -1,1 +1,1 @@
-docker run --rm --gpus all --name=taesik_ai8x-training -p 45555:5555 -v $(dirname $PWD):/home/$USER -itd taesik_ai8x-training /bin/bash
+docker run --rm --gpus all --name=taesik_ai8x-training -p 45555:5555 -v $(dirname $PWD):/home/$USER/git -itd taesik_ai8x-training /bin/bash
