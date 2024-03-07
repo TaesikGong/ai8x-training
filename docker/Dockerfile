@@ -7,6 +7,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # personally preferred apps
 RUN apt-get update && apt-get install -y \
+    openssh-server \
     build-essential \
     curl \
     git \
@@ -46,8 +47,20 @@ RUN apt-get install -y \
 
 RUN useradd -m ${USER} --uid=${UID} && echo "${USER}:${USER}" | chpasswd && adduser ${USER} sudo
 
+
+
+
+###### ssh setup
+RUN mkdir /var/run/sshd
+# Set root password for SSH access
+RUN echo 'root:root' | chpasswd # 'username:userpasswd'
+RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+EXPOSE 22
+#CMD ["/usr/sbin/sshd", "-D"] #TODO: this doesn't start running ssh service. why?
+
 # Switch to the root user to run conda init and modify the non-root user's bashrc
 USER root
+###### conda setup
 RUN /opt/conda/bin/conda init bash
 COPY requirements-cu11.txt /home/${USER}/requirements-cu11.txt
 # Ensure the non-root user's .bashrc file activates the conda environment
@@ -57,6 +70,7 @@ RUN echo "source /opt/conda/etc/profile.d/conda.sh" >> /home/${USER}/.bashrc && 
 # Set user and workdir
 USER ${UID}:${GID}
 WORKDIR /home/${USER}
+
 
 # Copy the requirements file into the Docker image
 COPY requirements-cu11.txt /home/${USER}/requirements-cu11.txt
@@ -73,3 +87,4 @@ RUN /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh && \
                   pip install -U pip wheel setuptools && \
                   pip install -r /home/${USER}/requirements-cu11.txt && \
                   pip install -e git+https://github.com/MaximIntegratedAI/distiller.git@ea4436d#egg=distiller"
+

@@ -1,0 +1,1 @@
+docker exec -it taesik_ai8x-training sh -c 'su -c "service ssh start" root && cd ~/git/ai8x-training && /bin/bash'
