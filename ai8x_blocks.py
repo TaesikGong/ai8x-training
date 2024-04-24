@@ -75,9 +75,9 @@ class ResidualBottleneck(nn.Module):
             else:
                 #TODO: apply skipping only for custom models
 
-                # self.conv2 = ai8x.FusedDepthwiseConv2dReLU(hidden_channels, hidden_channels, 3,
-                #                                            padding=1, stride=stride,
-                #                                            bias=depthwise_bias, **kwargs)
+                self.conv2 = ai8x.FusedDepthwiseConv2dReLU(hidden_channels, hidden_channels, 3,
+                                                           padding=1, stride=stride,
+                                                           bias=depthwise_bias, **kwargs)
                 # self.conv2 = ai8x.FusedConv2dReLU(hidden_channels, hidden_channels, 3,
                 #                                            padding=1, stride=stride,
                 #                                            bias=depthwise_bias, **kwargs)
@@ -98,12 +98,12 @@ class ResidualBottleneck(nn.Module):
             else:
                 # TODO: apply skipping only for custom models
 
-                # self.conv2 = ai8x.FusedMaxPoolDepthwiseConv2dReLU(hidden_channels,
-                #                                                   hidden_channels,
-                #                                                   3, padding=1, pool_size=stride,
-                #                                                   pool_stride=stride,
-                #                                                   bias=depthwise_bias,
-                #                                                   **kwargs)
+                self.conv2 = ai8x.FusedMaxPoolDepthwiseConv2dReLU(hidden_channels,
+                                                                  hidden_channels,
+                                                                  3, padding=1, pool_size=stride,
+                                                                  pool_stride=stride,
+                                                                  bias=depthwise_bias,
+                                                                  **kwargs)
                 # self.conv2 = ai8x.FusedConv2dReLU(hidden_channels,
                 #                                                   hidden_channels,
                 #                                                   3, padding=1, pool_size=stride,
@@ -137,7 +137,7 @@ class ResidualBottleneck(nn.Module):
     def forward(self, x):  # pylint: disable=arguments-differ
         """Forward prop"""
         y = self.conv1(x)
-        # y = self.conv2(y) #TODO: apply skipping only for custom models
+        y = self.conv2(y) #TODO: apply skipping only for custom models
         y = self.conv3(y)
         return self.resid(y, x)
 
@@ -194,12 +194,12 @@ class MBConvBlock(nn.Module):
         if fused is not True:
             # TODO: apply skipping only for custom models
 
-            # self.depthwise_conv = ai8x.FusedConv2dBNReLU(in_channels=out, out_channels=out,
-            #                                              groups=out,  # groups makes it depthwise
-            #                                              padding=1, kernel_size=kernel_size,
-            #                                              stride=stride, batchnorm='Affine',
-            #                                              bias=bias, eps=1e-03, momentum=0.01,
-            #                                              **kwargs)
+            self.depthwise_conv = ai8x.FusedConv2dBNReLU(in_channels=out, out_channels=out,
+                                                         groups=out,  # groups makes it depthwise
+                                                         padding=1, kernel_size=kernel_size,
+                                                         stride=stride, batchnorm='Affine',
+                                                         bias=bias, eps=1e-03, momentum=0.01,
+                                                         **kwargs)
 
             # self.depthwise_conv = ai8x.FusedConv2dBNReLU(in_channels=out, out_channels=out,
             #                                              groups=1,  # avoid grouping
@@ -246,7 +246,7 @@ class MBConvBlock(nn.Module):
             x = self.expand_conv(inputs)
         # Depthwise Convolution layer
         if self.fused is not True:
-            # x = self.depthwise_conv(x) #TODO: apply skipping only for custom models
+            x = self.depthwise_conv(x) #TODO: apply skipping only for custom models
             pass
         # Squeeze and Excitation layers
         if self.has_se:
