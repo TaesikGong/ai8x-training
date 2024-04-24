@@ -1,4 +1,3 @@
-
 ###################################################################################################
 #
 # Copyright (C) 2018-2023 Maxim Integrated Products, Inc. All Rights Reserved.
@@ -42,6 +41,7 @@ class data_reshape:
 
     [1] https://arxiv.org/pdf/2203.16528.pdf
     """
+
     def __init__(self, target_size, target_channel):
         self.target_size = target_size
         self.target_channel = target_channel
@@ -50,7 +50,7 @@ class data_reshape:
         current_num_channel = img.shape[0]
         if self.target_channel == current_num_channel:
             return img
-        fold_ratio = int(math.sqrt(self.target_channel/current_num_channel))
+        fold_ratio = int(math.sqrt(self.target_channel / current_num_channel))
         img_reshaped = None
         for i in range(fold_ratio):
             for j in range(fold_ratio):
@@ -62,8 +62,9 @@ class data_reshape:
 
         return img_reshaped
 
+
 def imagenette_get_datasets(data, load_train=True, load_test=True,
-                            input_size=360, target_size=64, target_channel=3, folder=True, augment_data=False):
+                            input_size=224, target_size=64, target_channel=3, folder=True, augment_data=True):
     """
     Load the ImageNet 2012 Classification dataset.
 
@@ -105,7 +106,7 @@ def imagenette_get_datasets(data, load_train=True, load_test=True,
 
         if load_test:
             test_transform = transforms.Compose([
-                transforms.Resize(int(input_size / 0.875)),
+                transforms.Resize(int(input_size / 0.875)),  # 224/256 = 0.875
                 transforms.CenterCrop(input_size),
                 transforms.ToTensor(),
                 transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
@@ -183,45 +184,54 @@ def imagenette_get_datasets(data, load_train=True, load_test=True,
 
     return train_dataset, test_dataset
 
-def imagenette_get_datasets_3x64x64(data, load_train=True, load_test=True,
-                            input_size=360, folder=True, augment_data=True):
 
-    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size, folder=folder, augment_data=augment_data, target_size=64, target_channel=3)
+def imagenette_get_datasets_3x64x64(data, load_train=True, load_test=True,
+                                    input_size=224, folder=True, augment_data=True):
+    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
+                                   folder=folder, augment_data=augment_data, target_size=64, target_channel=3)
+
 
 def imagenette_get_datasets_48x64x64(data, load_train=True, load_test=True,
-                            input_size=360, folder=True, augment_data=True):
+                                     input_size=224, folder=True, augment_data=True):
+    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
+                                   folder=folder, augment_data=augment_data, target_size=64, target_channel=48)
 
-    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size, folder=folder, augment_data=augment_data, target_size=64, target_channel=48)
 
 def imagenette_get_datasets_3x32x32(data, load_train=True, load_test=True,
-                            input_size=360, folder=True, augment_data=True):
+                                    input_size=224, folder=True, augment_data=True):
+    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
+                                   folder=folder, augment_data=augment_data, target_size=32, target_channel=3)
 
-    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size, folder=folder, augment_data=augment_data, target_size=32, target_channel=3)
 
 def imagenette_get_datasets_12x32x32(data, load_train=True, load_test=True,
-                            input_size=360, folder=True, augment_data=True):
+                                     input_size=224, folder=True, augment_data=True):
+    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
+                                   folder=folder, augment_data=augment_data, target_size=32, target_channel=12)
 
-    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size, folder=folder, augment_data=augment_data, target_size=32, target_channel=12)
 
 def imagenette_get_datasets_48x32x32(data, load_train=True, load_test=True,
-                            input_size=360, folder=True, augment_data=True):
+                                     input_size=224, folder=True, augment_data=True):
+    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
+                                   folder=folder, augment_data=augment_data, target_size=32, target_channel=48)
 
-    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size, folder=folder, augment_data=augment_data, target_size=32, target_channel=48)
 
 def imagenette_get_datasets_3x112x112(data, load_train=True, load_test=True,
-                            input_size=360, folder=True, augment_data=True):
+                                      input_size=224, folder=True, augment_data=True):
+    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
+                                   folder=folder, augment_data=augment_data, target_size=112, target_channel=3)
 
-    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size, folder=folder, augment_data=augment_data, target_size=112, target_channel=3)
 
 def imagenette_get_datasets_12x112x112(data, load_train=True, load_test=True,
-                            input_size=360, folder=True, augment_data=True):
+                                       input_size=224, folder=True, augment_data=True):
+    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
+                                   folder=folder, augment_data=augment_data, target_size=112, target_channel=12)
 
-    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size, folder=folder, augment_data=augment_data, target_size=112, target_channel=12)
 
 def imagenette_get_datasets_48x112x112(data, load_train=True, load_test=True,
-                            input_size=360, folder=True, augment_data=True):
+                                       input_size=224, folder=True, augment_data=True):
+    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
+                                   folder=folder, augment_data=augment_data, target_size=112, target_channel=48)
 
-    return imagenette_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size, folder=folder, augment_data=augment_data, target_size=112, target_channel=48)
 
 datasets = [
     {
