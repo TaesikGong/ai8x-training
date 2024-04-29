@@ -7,8 +7,10 @@ from PIL import Image
 
 from torchvision.datasets.utils import download_and_extract_archive, verify_str_arg
 from torchvision.datasets.vision import VisionDataset
+from utils.data_reshape import data_reshape
 
 
+initial_image_size = 300
 class Caltech101(VisionDataset):
     """`Caltech 101 <https://data.caltech.edu/records/20086>`_ Dataset.
 
@@ -160,35 +162,6 @@ import ai8x
 import math
 
 
-class data_reshape:
-    """
-    Fold data to increase the number of channels. An interlaced approach used in this folding
-    as explained in [1].
-
-    [1] https://arxiv.org/pdf/2203.16528.pdf
-    """
-
-    def __init__(self, target_size, target_channel):
-        self.target_size = target_size
-        self.target_channel = target_channel
-
-    def __call__(self, img):
-        current_num_channel = img.shape[0]
-        if self.target_channel == current_num_channel:
-            return img
-        fold_ratio = int(math.sqrt(self.target_channel / current_num_channel))
-        img_reshaped = None
-        for i in range(fold_ratio):
-            for j in range(fold_ratio):
-                img_subsample = img[:, i::fold_ratio, j::fold_ratio]
-                if img_reshaped is not None:
-                    img_reshaped = torch.cat((img_reshaped, img_subsample), dim=0)
-                else:
-                    img_reshaped = img_subsample
-
-        return img_reshaped
-
-
 class CustomSubsetDataset(Dataset): #required to apply transform to subset datasets
     def __init__(self, subset, transform=None):
         self.subset = subset
@@ -222,13 +195,14 @@ def caltech101_get_datasets(data, load_train=True, load_test=True,
         train_transform = transforms.Compose([
             transforms.Lambda(lambda x: x.convert("RGB")),  # Convert grayscale to RGB if needed
             # transforms.Grayscale(num_output_channels=3),
-            transforms.RandomResizedCrop(input_size),
+            # transforms.RandomResizedCrop(input_size),
+            transforms.Resize((input_size, input_size)),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             ai8x.normalize(args=args),
             data_reshape(target_size, target_channel),
-            transforms.Resize(target_size)
+            # transforms.Resize(target_size)
         ])
 
         train_dataset = CustomSubsetDataset(
@@ -239,13 +213,14 @@ def caltech101_get_datasets(data, load_train=True, load_test=True,
     if load_test:
         test_transform = transforms.Compose([
             transforms.Lambda(lambda x: x.convert("RGB")),  # Convert grayscale to RGB if needed
-            transforms.Resize(int(input_size / 0.875)),  # 224/256 = 0.875
-            transforms.CenterCrop(input_size),
+            # transforms.Resize(int(input_size / 0.875)),  # 224/256 = 0.875
+            # transforms.CenterCrop(input_size),
+            transforms.Resize((input_size, input_size)),
             transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             ai8x.normalize(args=args),
             data_reshape(target_size, target_channel),
-            transforms.Resize(target_size)
+            # transforms.Resize(target_size)
         ])
 
         test_dataset = CustomSubsetDataset(
@@ -260,55 +235,60 @@ def caltech101_get_datasets(data, load_train=True, load_test=True,
 
 
 def caltech101_get_datasets_3x32x32(data, load_train=True, load_test=True,
-                                    input_size=224):
+                                    input_size=initial_image_size):
     return caltech101_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
                                    target_size=32, target_channel=3)
 
 
 def caltech101_get_datasets_12x32x32(data, load_train=True, load_test=True,
-                                     input_size=224):
+                                     input_size=initial_image_size):
     return caltech101_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
                                    target_size=32, target_channel=12)
 
 
 def caltech101_get_datasets_48x32x32(data, load_train=True, load_test=True,
-                                     input_size=224):
+                                     input_size=initial_image_size):
     return caltech101_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
                                    target_size=32, target_channel=48)
 
+def caltech101_get_datasets_64x32x32(data, load_train=True, load_test=True,
+                                     input_size=initial_image_size):
+    return caltech101_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
+                                   target_size=32, target_channel=64)
+
 
 def caltech101_get_datasets_3x64x64(data, load_train=True, load_test=True,
-                                    input_size=224):
+                                    input_size=initial_image_size):
     return caltech101_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
                                    target_size=64, target_channel=3)
 
 
 def caltech101_get_datasets_12x64x64(data, load_train=True, load_test=True,
-                                     input_size=224):
+                                     input_size=initial_image_size):
     return caltech101_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
                                    target_size=64, target_channel=12)
 
 
 def caltech101_get_datasets_48x64x64(data, load_train=True, load_test=True,
-                                     input_size=224):
+                                     input_size=initial_image_size):
     return caltech101_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
                                    target_size=64, target_channel=48)
 
 
 def caltech101_get_datasets_3x112x112(data, load_train=True, load_test=True,
-                                      input_size=224):
+                                      input_size=initial_image_size):
     return caltech101_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
                                    target_size=112, target_channel=3)
 
 
 def caltech101_get_datasets_12x112x112(data, load_train=True, load_test=True,
-                                       input_size=224):
+                                       input_size=initial_image_size):
     return caltech101_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
                                    target_size=112, target_channel=12)
 
 
 def caltech101_get_datasets_48x112x112(data, load_train=True, load_test=True,
-                                       input_size=224):
+                                       input_size=initial_image_size):
     return caltech101_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
                                    target_size=112, target_channel=48)
 
@@ -331,6 +311,12 @@ datasets = [
         'input': (48, 32, 32),
         'output': list(map(str, range(101))),
         'loader': caltech101_get_datasets_48x32x32
+    },
+    {
+        'name': 'Caltech101_64x32x32',
+        'input': (64, 32, 32),
+        'output': list(map(str, range(101))),
+        'loader': caltech101_get_datasets_64x32x32
     },
     {
         'name': 'Caltech101_3x64x64',
