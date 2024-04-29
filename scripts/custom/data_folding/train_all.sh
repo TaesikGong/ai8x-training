@@ -1,22 +1,35 @@
 #!/bin/bash
 
-datasets="Food101" #Flower102 Food101 Caltech101 Imagenette
-num_channels="64" #3 12 48 64
-models="convnet5" #convnet5 simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075
+datasets="Food101" #Caltech101 Imagenette Flower102 Food101
+num_channels="3 12 48 64" #3 12 48 64
+models="simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075" # simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075 ######## convnet5
 
 declare -a pid_array=()
 declare -a cuda_array=(0 1 2 3 4 5 6 7) # Adjust if you have fewer devices
 declare -a cuda_usage=(0 0 0 0 0 0 0 0) # Initialize with zero, tracking scripts per GPU
 max_jobs_per_gpu=2
 
-# Function to find and return the first available CUDA device with less than 2 running tasks
+# Function to find and return the CUDA device with the least usage and less than 2 running tasks
+
 find_available_cuda() {
+  local min_usage=$max_jobs_per_gpu # Set initial minimal usage to max allowed jobs per GPU
+  local min_index=-1 # Initialize with an invalid index
+
   for i in "${!cuda_usage[@]}"; do
-    if [ "${cuda_usage[i]}" -lt $max_jobs_per_gpu ]; then
-      echo $i
-      return 1
+    if [ "${cuda_usage[i]}" -lt "$max_jobs_per_gpu" ]; then
+      if [ "${cuda_usage[i]}" -lt "$min_usage" ]; then
+        min_usage="${cuda_usage[i]}"
+        min_index=$i
+      fi
     fi
   done
+
+  if [ "$min_index" -ne -1 ]; then
+    echo $min_index
+    return 0 # Successfully found an available device
+  else
+    return 1 # Return an error if no available device is found
+  fi
 }
 
 # Function to update CUDA usage tracking array
