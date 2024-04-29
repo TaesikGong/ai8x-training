@@ -114,32 +114,6 @@ class Flowers102(VisionDataset):
             download_url(self._download_url_prefix + filename, str(self._base_folder), md5=md5)
 
 
-###################################################################################################
-#
-# Copyright (C) 2018-2023 Maxim Integrated Products, Inc. All Rights Reserved.
-#
-# Maxim Integrated Products, Inc. Default Copyright Notice:
-# https://www.maximintegrated.com/en/aboutus/legal/copyrights.html
-#
-###################################################################################################
-#
-# Portions Copyright (c) 2018 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-"""
-ImageNet Dataset (using PyTorch's ImageNet and ImageFolder classes)
-"""
 import os
 
 import torchvision
@@ -215,7 +189,7 @@ def flower102_get_datasets(data, load_train=True, load_test=True,
 
         test_dataset = Flowers102(
             root=os.path.join(data_dir, 'Flower102'),
-            split='val',
+            split='test',
             transform=test_transform,
             download=True,
         )
