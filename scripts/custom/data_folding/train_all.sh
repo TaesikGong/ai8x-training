@@ -1,8 +1,8 @@
 #!/bin/bash
 
-datasets="Food101 Caltech101 Imagenette" #Flower102 Food101 Caltech101 Imagenette
-num_channels="3 12 48" #3 12 48
-models="convnet5 simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075" #convnet5 simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075
+datasets="Food101" #Flower102 Food101 Caltech101 Imagenette
+num_channels="64" #3 12 48 64
+models="convnet5" #convnet5 simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075
 
 declare -a pid_array=()
 declare -a cuda_array=(0 1 2 3 4 5 6 7) # Adjust if you have fewer devices
@@ -40,22 +40,29 @@ for dataset in $datasets; do
   for num_channel in $num_channels; do
     for model in $models; do
       if [ "$model" = "convnet5" ]; then
-        args="--lr 0.1 --optimizer SGD --epochs 200 --deterministic --compress policies/schedule.yaml --model ai85net5 --dataset ${dataset}_${num_channel}x32x32 --param-hist --pr-curves --embedding --device MAX78000 --batch-size $batch_size --validation-split 0"
+        args="--deterministic --workers 8 --epochs 200 --optimizer SGD --lr 0.1  --compress policies/schedule.yaml --model ai85net5 --dataset ${dataset}_${num_channel}x32x32 --param-hist --pr-curves  --print-freq 100 --embedding --device MAX78000 --batch-size $batch_size --validation-split 0"
 
       elif [ "$model" = "simplenet" ]; then
-        args="--epochs 600 --optimizer Adam --lr 0.00032 --wd 0 --compress policies/schedule-cifar100.yaml --model ai85simplenet --dataset ${dataset}_${num_channel}x32x32 --device MAX78000 --batch-size $batch_size --print-freq 100 --validation-split 0 --qat-policy None --use-bias" #TODO: qat-poilcy
+        # train_cifar100_qat_mixed.sh
+        args="--deterministic --workers 8 --epochs 300 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-cifar100.yaml --model ai85simplenet --dataset ${dataset}_${num_channel}x32x32 --device MAX78000 --batch-size $batch_size --print-freq 100 --validation-split 0 --qat-policy policies/qat_policy_cifar100.yaml --use-bias"
+
+        # train_cifar100.sh (NOTE: no QAT!)
+#        args="--deterministic --workers 8 --epochs 600 --optimizer Adam --lr 0.00032 --wd 0 --compress policies/schedule-cifar100.yaml --model ai85simplenet --dataset ${dataset}_${num_channel}x32x32 --device MAX78000 --batch-size $batch_size --print-freq 100 --validation-split 0 --qat-policy None --use-bias"
 
       elif [ "$model" = "ressimplenet" ]; then
-        args="--epochs 500 --deterministic --optimizer Adam --lr 0.00064 --wd 0 --compress policies/schedule-cifar100-ressimplenet.yaml --model ai85ressimplenet --dataset ${dataset}_${num_channel}x32x32 --device MAX78000 --batch-size $batch_size --print-freq 100 --validation-split 0"
+        args="--deterministic --workers 8 --epochs 500 --optimizer Adam --lr 0.00064 --wd 0 --compress policies/schedule-cifar100-ressimplenet.yaml --model ai85ressimplenet --dataset ${dataset}_${num_channel}x32x32 --device MAX78000 --batch-size $batch_size --print-freq 100 --validation-split 0"
 
       elif [ "$model" = "widenet" ]; then
-        args="--epochs 300 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-cifar100.yaml --model ai85simplenetwide2x --dataset ${dataset}_${num_channel}x32x32 --device MAX78000 --batch-size $batch_size --print-freq 100 --validation-split 0 --qat-policy policies/qat_policy_cifar100.yaml --use-bias"
+        args="--deterministic --workers 8 --epochs 300 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-cifar100.yaml --model ai85simplenetwide2x --dataset ${dataset}_${num_channel}x32x32 --device MAX78000 --batch-size $batch_size --print-freq 100 --validation-split 0 --qat-policy policies/qat_policy_cifar100.yaml --use-bias"
 
       elif [ "$model" = "efficientnetv2" ]; then
-        args="--deterministic --epochs 200 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-imagenet-effnet2.yaml --model ai87imageneteffnetv2 --dataset ${dataset}_${num_channel}x112x112 --device MAX78002 --batch-size $batch_size --print-freq 100 --validation-split 0 --use-bias --qat-policy policies/qat_policy_imagenet.yaml"
+        args="--deterministic --workers 8 --epochs 300 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-cifar100-effnet2.yaml --model ai87effnetv2 --dataset ${dataset}_${num_channel}x112x112 --device MAX78002 --batch-size $batch_size --print-freq 100 --validation-split 0 --use-bias --qat-policy policies/qat_policy_late_cifar.yaml"
+
+        ## efficientnet for imagenet
+#        args="--deterministic --epochs 200 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-imagenet-effnet2.yaml --model ai87imageneteffnetv2 --dataset ${dataset}_${num_channel}x112x112 --device MAX78002 --batch-size $batch_size --print-freq 100 --validation-split 0 --use-bias --qat-policy policies/qat_policy_imagenet.yaml"
 
       elif [ "$model" = "mobilenetv2_075" ]; then
-        args="--deterministic --epochs 300 --optimizer SGD --lr 0.1 --compress policies/schedule-cifar100-mobilenetv2.yaml --model ai87netmobilenetv2cifar100_m0_75 --dataset ${dataset}_${num_channel}x32x32 --device MAX78002 --batch-size $batch_size --print-freq 100 --validation-split 0 --use-bias --qat-policy policies/qat_policy_cifar100_mobilenetv2.yaml"
+        args="--deterministic --workers 8 --epochs 300 --optimizer SGD --lr 0.1 --compress policies/schedule-cifar100-mobilenetv2.yaml --model ai87netmobilenetv2cifar100_m0_75 --dataset ${dataset}_${num_channel}x32x32 --device MAX78002 --batch-size $batch_size --print-freq 100 --validation-split 0 --use-bias --qat-policy policies/qat_policy_cifar100_mobilenetv2.yaml"
       fi
 
 
