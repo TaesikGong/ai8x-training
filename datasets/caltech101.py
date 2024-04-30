@@ -155,26 +155,12 @@ class Caltech101(VisionDataset):
 import os
 
 import torchvision
-from torch.utils.data import Dataset
 from torchvision import transforms
 import torch
 import ai8x
 import math
+from datasets.custom_dataset import CustomSubsetDataset
 
-
-class CustomSubsetDataset(Dataset): #required to apply transform to subset datasets
-    def __init__(self, subset, transform=None):
-        self.subset = subset
-        self.transform = transform
-
-    def __getitem__(self, index):
-        x, y = self.subset[index]
-        if self.transform:
-            x = self.transform(x)
-        return x, y
-
-    def __len__(self):
-        return len(self.subset)
 
 
 def caltech101_get_datasets(data, load_train=True, load_test=True,

@@ -1,16 +1,26 @@
 #!/bin/bash
 
-datasets="Food101" #Caltech101 Imagenette Flower102 Food101
+datasets="PACS-P PACS-A PACS-C PACS-S" #Caltech101 Imagenette Flower102 Food101 PACS-P PACS-A PACS-C PACS-S
 num_channels="3 12 48 64" #3 12 48 64
-models="simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075" # simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075 ######## convnet5
+models="simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075" # simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075
+# ####### convnet5
 
-max_jobs_per_gpu=2
+### PS2
+max_jobs_per_gpu=1
 num_workers=8
+
+### PS3
+#max_jobs_per_gpu=2
+#num_workers=8
+
+### PS4
+#max_jobs_per_gpu=1
+#num_workers=10
 
 declare -a pid_array=()
 declare -a cuda_array=(0 1 2 3 4 5 6 7) # Adjust if you have fewer devices
 declare -a cuda_usage=(0 0 0 0 0 0 0 0) # Initialize with zero, tracking scripts per GPU
-max_jobs_per_gpu=2
+
 
 # Function to find and return the CUDA device with the least usage and less than 2 running tasks
 
@@ -50,6 +60,14 @@ for dataset in $datasets; do
   elif [ "$dataset" = "Food101" ]; then
     batch_size="128"
   elif [ "$dataset" = "Caltech101" ]; then
+    batch_size="32"
+  elif [ "$dataset" = "PACS-P" ]; then
+    batch_size="32"
+  elif [ "$dataset" = "PACS-A" ]; then
+    batch_size="32"
+  elif [ "$dataset" = "PACS-C" ]; then
+    batch_size="32"
+  elif [ "$dataset" = "PACS-S" ]; then
     batch_size="32"
   fi
 
