@@ -565,11 +565,15 @@ def main():
                 msglogger.info(distiller.masks_sparsity_tbl_summary(model, compression_scheduler))
 
         # evaluate on validation set
-        # pylint: disable=unsubscriptable-object
-        run_validation = not args.nas or (args.nas and (epoch < nas_policy['start_epoch']))
-        run_nas_validation = args.nas and (epoch >= nas_policy['start_epoch']) and \
-            ((epoch+1) % nas_policy['validation_freq'] == 0)
-        # pylint: enable=unsubscriptable-object
+        run_validation = False
+        run_nas_validation = False
+        val_freq = 10
+        if epoch % val_freq == 0:
+            # pylint: disable=unsubscriptable-object
+            run_validation = not args.nas or (args.nas and (epoch < nas_policy['start_epoch']))
+            run_nas_validation = args.nas and (epoch >= nas_policy['start_epoch']) and \
+                ((epoch+1) % nas_policy['validation_freq'] == 0)
+            # pylint: enable=unsubscriptable-object
 
         if run_validation or run_nas_validation:
             checkpoint_name = args.name
