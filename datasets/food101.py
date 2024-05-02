@@ -115,9 +115,9 @@ def food101_get_datasets(data, load_train=True, load_test=True,
             transforms.Resize((input_size, input_size)),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
+            data_reshape(target_size, target_channel),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             ai8x.normalize(args=args),
-            data_reshape(target_size, target_channel),
             # transforms.Resize(target_size)
         ])
 
@@ -136,9 +136,9 @@ def food101_get_datasets(data, load_train=True, load_test=True,
             # transforms.CenterCrop(input_size),
             transforms.Resize((input_size, input_size)),
             transforms.ToTensor(),
+            data_reshape(target_size, target_channel),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             ai8x.normalize(args=args),
-            data_reshape(target_size, target_channel),
             # transforms.Resize(target_size)
         ])
 
