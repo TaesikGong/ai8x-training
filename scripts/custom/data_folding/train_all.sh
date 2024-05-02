@@ -1,17 +1,17 @@
 #!/bin/bash
 
-datasets="PACS-P PACS-A PACS-C PACS-S" #Caltech101 Imagenette Flower102 Food101 PACS-P PACS-A PACS-C PACS-S
-num_channels="3 12 48 64" #3 12 48 64
-models="simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075" # simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075
+datasets="CUB" #Caltech101 Imagenette Flower102 Food101 CUB StanfordCars PACS-P PACS-A PACS-C PACS-S
+num_channels="3 12 48 64 " #3 12 48 64
+models="simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075 " # simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075
 # ####### convnet5
 
 ### PS2
-max_jobs_per_gpu=1
-num_workers=8
+#max_jobs_per_gpu=1
+#num_workers=8
 
 ### PS3
-#max_jobs_per_gpu=2
-#num_workers=8
+max_jobs_per_gpu=2
+num_workers=8
 
 ### PS4
 #max_jobs_per_gpu=1
@@ -60,6 +60,10 @@ for dataset in $datasets; do
   elif [ "$dataset" = "Food101" ]; then
     batch_size="128"
   elif [ "$dataset" = "Caltech101" ]; then
+    batch_size="32"
+  elif [ "$dataset" = "CUB" ]; then
+    batch_size="32"
+  elif [ "$dataset" = "StanfordCars" ]; then
     batch_size="32"
   elif [ "$dataset" = "PACS-P" ]; then
     batch_size="32"
