@@ -7,6 +7,8 @@ from torchvision.datasets.utils import check_integrity, download_and_extract_arc
 from torchvision.datasets import VisionDataset
 from utils.data_reshape import data_reshape
 
+from functools import partial
+
 initial_image_size = 500
 
 class Flowers102(VisionDataset):
@@ -177,125 +179,14 @@ def flower102_get_datasets(data, load_train=True, load_test=True,
     return train_dataset, test_dataset
 
 
-def flower102_get_datasets_3x32x32(data, load_train=True, load_test=True,
-                                   input_size=initial_image_size):
-    return flower102_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
-                                  target_size=32, target_channel=3)
+datasets = []
 
-
-def flower102_get_datasets_12x32x32(data, load_train=True, load_test=True,
-                                    input_size=initial_image_size):
-    return flower102_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
-                                  target_size=32, target_channel=12)
-
-
-def flower102_get_datasets_48x32x32(data, load_train=True, load_test=True,
-                                    input_size=initial_image_size):
-    return flower102_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
-                                  target_size=32, target_channel=48)
-
-
-def flower102_get_datasets_64x32x32(data, load_train=True, load_test=True,
-                                    input_size=initial_image_size):
-    return flower102_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
-                                  target_size=32, target_channel=64)
-
-
-def flower102_get_datasets_3x64x64(data, load_train=True, load_test=True,
-                                   input_size=initial_image_size):
-    return flower102_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
-                                  target_size=64, target_channel=3)
-
-
-def flower102_get_datasets_12x64x64(data, load_train=True, load_test=True,
-                                    input_size=initial_image_size):
-    return flower102_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
-                                  target_size=64, target_channel=12)
-
-
-def flower102_get_datasets_48x64x64(data, load_train=True, load_test=True,
-                                    input_size=initial_image_size):
-    return flower102_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
-                                  target_size=64, target_channel=48)
-
-
-def flower102_get_datasets_3x112x112(data, load_train=True, load_test=True,
-                                     input_size=initial_image_size):
-    return flower102_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
-                                  target_size=112, target_channel=3)
-
-
-def flower102_get_datasets_12x112x112(data, load_train=True, load_test=True,
-                                      input_size=initial_image_size):
-    return flower102_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
-                                  target_size=112, target_channel=12)
-
-
-def flower102_get_datasets_48x112x112(data, load_train=True, load_test=True,
-                                      input_size=initial_image_size):
-    return flower102_get_datasets(data=data, load_train=load_train, load_test=load_test, input_size=input_size,
-                                  target_size=112, target_channel=48)
-
-
-datasets = [
-    {
-        'name': 'Flower102_3x32x32',
-        'input': (3, 32, 32),
-        'output': list(map(str, range(102))),
-        'loader': flower102_get_datasets_3x32x32
-    },
-    {
-        'name': 'Flower102_12x32x32',
-        'input': (12, 32, 32),
-        'output': list(map(str, range(102))),
-        'loader': flower102_get_datasets_12x32x32
-    },
-    {
-        'name': 'Flower102_48x32x32',
-        'input': (48, 32, 32),
-        'output': list(map(str, range(102))),
-        'loader': flower102_get_datasets_48x32x32
-    },
-    {
-        'name': 'Flower102_64x32x32',
-        'input': (64, 32, 32),
-        'output': list(map(str, range(102))),
-        'loader': flower102_get_datasets_64x32x32
-    },
-    {
-        'name': 'Flower102_3x64x64',
-        'input': (3, 64, 64),
-        'output': list(map(str, range(102))),
-        'loader': flower102_get_datasets_3x64x64
-    },
-    {
-        'name': 'Flower102_12x64x64',
-        'input': (12, 64, 64),
-        'output': list(map(str, range(102))),
-        'loader': flower102_get_datasets_12x64x64
-    },
-    {
-        'name': 'Flower102_48x64x64',
-        'input': (48, 64, 64),
-        'output': list(map(str, range(102))),
-        'loader': flower102_get_datasets_48x64x64
-    },
-    {
-        'name': 'Flower102_3x112x112',
-        'input': (3, 112, 112),
-        'output': list(map(str, range(102))),
-        'loader': flower102_get_datasets_3x112x112
-    },
-    {
-        'name': 'Flower102_12x112x112',
-        'input': (12, 112, 112),
-        'output': list(map(str, range(102))),
-        'loader': flower102_get_datasets_12x112x112
-    },
-    {
-        'name': 'Flower102_48x112x112',
-        'input': (48, 112, 112),
-        'output': list(map(str, range(102))),
-        'loader': flower102_get_datasets_48x112x112
-    },
-]
+for size in [32]:
+    for channel in [3, 12, 48, 64]:
+        dic = {}
+        dic['name'] = f'Flower102_{channel}x{size}x{size}'
+        dic['input'] = (channel, size, size)
+        dic['output'] = list(map(str, range(200)))
+        dic['loader'] = partial(flower102_get_datasets, load_train=True, load_test=True, input_size=initial_image_size,
+                                target_size=size, target_channel=channel)
+        datasets.append(dic)
