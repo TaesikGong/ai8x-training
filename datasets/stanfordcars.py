@@ -177,7 +177,7 @@ datasets = []
 for size in [32]:
     for channel in [3, 12, 48, 64]:
         dic = {}
-        dic['name'] = f'StandfordCars_{channel}x{size}x{size}'
+        dic['name'] = f'StanfordCars_{channel}x{size}x{size}'
         dic['input'] = (channel, size, size)
         dic['output'] = list(map(str, range(200)))
         dic['loader'] = partial(stanfordcars_get_datasets, load_train=True, load_test=True, input_size=initial_image_size,
