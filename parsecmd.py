@@ -238,6 +238,13 @@ def get_parser(model_names, dataset_names):
     parser.add_argument('--sparsity-perf', action='store_true', default=False,
                         help='when determining best epoch, use sparsity as primary key')
 
+    parser.add_argument('--aug', type=str, default='000000000000000',
+                        help='augmentation for DataX project')
+    parser.add_argument('--no_data_reshape',
+                                    default=False,
+                                    action='store_true',
+                                    help='Disable custom data reshaping')
+
     obj_detection_args = parser.add_argument_group('Object Detection Arguments')
     obj_detection_args.add_argument('--enable-obj-detection', '--obj-detection',
                                     dest='obj_detection', default=False,

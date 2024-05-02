@@ -1,17 +1,49 @@
 #!/bin/bash
 
-datasets="CUB" #Caltech101 Imagenette Flower102 Food101 CUB StanfordCars PACS-P PACS-A PACS-C PACS-S
-num_channels="3 12 48 64 " #3 12 48 64
-models="simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075 " # simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075
+datasets="Caltech101" #Caltech101 Imagenette Flower102 Food101 CUB StanfordCars PACS-P PACS-A PACS-C PACS-S
+num_channels="6 " #3 12 48 64
+models="simplenet " # simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075
+reshape="--no_data_reshape" # "--no_data_reshape" or " "
+augs="000000000000001
+000000000000010
+000000000000100
+000000000001000
+000000000010000
+000000000100000
+000000001000000
+000000010000000
+000000100000000
+000001000000000
+000010000000000
+000100000000000
+001000000000000
+010000000000000
+100000000000000 "
+
+#"000000000000001
+#000000000000010
+#000000000000100
+#000000000001000
+#000000000010000
+#000000000100000
+#000000001000000
+#000000010000000
+#000000100000000
+#000001000000000
+#000010000000000
+#000100000000000
+#001000000000000
+#010000000000000
+#100000000000000 "
 # ####### convnet5
 
 ### PS2
-#max_jobs_per_gpu=1
-#num_workers=8
+max_jobs_per_gpu=1
+num_workers=8
 
 ### PS3
-max_jobs_per_gpu=2
-num_workers=8
+#max_jobs_per_gpu=2
+#num_workers=8
 
 ### PS4
 #max_jobs_per_gpu=1
@@ -77,61 +109,65 @@ for dataset in $datasets; do
 
   for num_channel in $num_channels; do
     for model in $models; do
-      if [ "$model" = "convnet5" ]; then
-        args="--deterministic --workers $num_workers --epochs 200 --optimizer SGD --lr 0.1  --compress policies/schedule.yaml --model ai85net5 --dataset ${dataset}_${num_channel}x32x32 --param-hist --pr-curves  --print-freq 100 --embedding --device MAX78000 --batch-size $batch_size --validation-split 0"
+      for aug in $augs; do
 
-      elif [ "$model" = "simplenet" ]; then
-        # train_cifar100_qat_mixed.sh
-        args="--deterministic --workers $num_workers --epochs 300 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-cifar100.yaml --model ai85simplenet --dataset ${dataset}_${num_channel}x32x32 --device MAX78000 --batch-size $batch_size --print-freq 100 --validation-split 0 --qat-policy policies/qat_policy_cifar100.yaml --use-bias"
+          common_args="--deterministic --workers $num_workers --validation-split 0 --batch-size $batch_size --dataset ${dataset}_${num_channel}x32x32 --aug $aug $reshape "
 
-        # train_cifar100.sh (NOTE: no QAT!)
-#        args="--deterministic --workers $num_workers --epochs 600 --optimizer Adam --lr 0.00032 --wd 0 --compress policies/schedule-cifar100.yaml --model ai85simplenet --dataset ${dataset}_${num_channel}x32x32 --device MAX78000 --batch-size $batch_size --print-freq 100 --validation-split 0 --qat-policy None --use-bias"
+          if [ "$model" = "convnet5" ]; then
+            args=$common_args" --epochs 200 --optimizer SGD --lr 0.1 --compress policies/schedule.yaml --model ai85net5 --param-hist --pr-curves --print-freq 100 --embedding --device MAX78000 "
 
-      elif [ "$model" = "ressimplenet" ]; then
-        args="--deterministic --workers $num_workers --epochs 500 --optimizer Adam --lr 0.00064 --wd 0 --compress policies/schedule-cifar100-ressimplenet.yaml --model ai85ressimplenet --dataset ${dataset}_${num_channel}x32x32 --device MAX78000 --batch-size $batch_size --print-freq 100 --validation-split 0"
+          elif [ "$model" = "simplenet" ]; then
+            # train_cifar100_qat_mixed.sh
+            args=$common_args" --epochs 300 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-cifar100.yaml --model ai85simplenet --device MAX78000 --print-freq 100 --qat-policy policies/qat_policy_cifar100.yaml --use-bias"
 
-      elif [ "$model" = "widenet" ]; then
-        args="--deterministic --workers $num_workers --epochs 300 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-cifar100.yaml --model ai85simplenetwide2x --dataset ${dataset}_${num_channel}x32x32 --device MAX78000 --batch-size $batch_size --print-freq 100 --validation-split 0 --qat-policy policies/qat_policy_cifar100.yaml --use-bias"
+            # train_cifar100.sh (NOTE: no QAT!)
+    #        args=$common_args" --epochs 600 --optimizer Adam --lr 0.00032 --wd 0 --compress policies/schedule-cifar100.yaml --model ai85simplenet --device MAX78000 --print-freq 100 --qat-policy None --use-bias"
 
-      elif [ "$model" = "efficientnetv2" ]; then
-        args="--deterministic --workers $num_workers --epochs 300 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-cifar100-effnet2.yaml --model ai87effnetv2 --dataset ${dataset}_${num_channel}x32x32 --device MAX78002 --batch-size $batch_size --print-freq 100 --validation-split 0 --use-bias --qat-policy policies/qat_policy_late_cifar.yaml"
+          elif [ "$model" = "ressimplenet" ]; then
+            args=$common_args" --epochs 500 --optimizer Adam --lr 0.00064 --wd 0 --compress policies/schedule-cifar100-ressimplenet.yaml --model ai85ressimplenet --device MAX78000 --print-freq 100"
 
-        ## efficientnet for imagenet
-#        args="--deterministic --workers $num_workers --epochs 200 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-imagenet-effnet2.yaml --model ai87imageneteffnetv2 --dataset ${dataset}_${num_channel}x112x112 --device MAX78002 --batch-size $batch_size --print-freq 100 --validation-split 0 --use-bias --qat-policy policies/qat_policy_imagenet.yaml"
+          elif [ "$model" = "widenet" ]; then
+            args=$common_args" --epochs 300 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-cifar100.yaml --model ai85simplenetwide2x  --device MAX78000 --print-freq 100 --qat-policy policies/qat_policy_cifar100.yaml --use-bias"
 
-      elif [ "$model" = "mobilenetv2_075" ]; then
-        args="--deterministic --workers $num_workers --epochs 300 --optimizer SGD --lr 0.1 --compress policies/schedule-cifar100-mobilenetv2.yaml --model ai87netmobilenetv2cifar100_m0_75 --dataset ${dataset}_${num_channel}x32x32 --device MAX78002 --batch-size $batch_size --print-freq 100 --validation-split 0 --use-bias --qat-policy policies/qat_policy_cifar100_mobilenetv2.yaml"
-      fi
+          elif [ "$model" = "efficientnetv2" ]; then
+            args=$common_args" --epochs 300 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-cifar100-effnet2.yaml --model ai87effnetv2 --device MAX78002 --print-freq 100 --use-bias --qat-policy policies/qat_policy_late_cifar.yaml"
 
+            ## efficientnet for imagenet
+    #        args=$common_args" --epochs 200 --optimizer Adam --lr 0.001 --wd 0 --compress policies/schedule-imagenet-effnet2.yaml --model ai87imageneteffnetv2 --dataset ${dataset}_${num_channel}x112x112 --device MAX78002 --print-freq 100 --use-bias --qat-policy policies/qat_policy_imagenet.yaml"
 
-
-      # Wait for a CUDA device to be available if all are currently fully utilized
-      while true; do
-        cuda_id=$(find_available_cuda)
-        if [ -n "$cuda_id" ]; then
-          update_cuda_usage $cuda_id 1
-          break
-        fi
-        # Periodically check and clean up finished jobs, updating GPU usage
-        for idx in "${!pid_array[@]}"; do
-          if ! kill -0 ${pid_array[idx]} 2>/dev/null; then
-            update_cuda_usage $idx -1
-            unset pid_array[idx]
+          elif [ "$model" = "mobilenetv2_075" ]; then
+            args=$common_args" --epochs 300 --optimizer SGD --lr 0.1 --compress policies/schedule-cifar100-mobilenetv2.yaml --model ai87netmobilenetv2cifar100_m0_75 --device MAX78002 --print-freq 100 --use-bias --qat-policy policies/qat_policy_cifar100_mobilenetv2.yaml"
           fi
+
+
+
+        # Wait for a CUDA device to be available if all are currently fully utilized
+        while true; do
+          cuda_id=$(find_available_cuda)
+          if [ -n "$cuda_id" ]; then
+            update_cuda_usage $cuda_id 1
+            break
+          fi
+          # Periodically check and clean up finished jobs, updating GPU usage
+          for idx in "${!pid_array[@]}"; do
+            if ! kill -0 ${pid_array[idx]} 2>/dev/null; then
+              update_cuda_usage $idx -1
+              unset pid_array[idx]
+            fi
+          done
         done
+
+
+        current_time=$(date "+%y%m%d-%H%M%S")
+        echo "Executing on CUDA_VISIBLE_DEVICES=$cuda_id: python train.py $args"
+        CUDA_VISIBLE_DEVICES=$cuda_id python train.py $args 2>&1 | tee logs/${current_time}_${dataset}_${model}_${num_channel}_${aug}.txt &
+
+        pid=$!
+        pid_array[$cuda_id]=$pid
+        sleep 1.5
+
+
       done
-
-
-      current_time=$(date "+%y%m%d-%H%M%S")
-      echo "Executing on CUDA_VISIBLE_DEVICES=$cuda_id: python train.py $args"
-      CUDA_VISIBLE_DEVICES=$cuda_id python train.py $args 2>&1 | tee logs/${current_time}_${dataset}_${model}_${num_channel}.txt &
-
-      pid=$!
-      pid_array[$cuda_id]=$pid
-      sleep 1.5
-
-
-
     done
   done
 done
