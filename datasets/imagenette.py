@@ -33,6 +33,7 @@ import torch
 import ai8x
 import math
 from utils.data_reshape import data_reshape, fractional_repeat
+from utils.data_augmentation import data_augmentation
 from functools import partial
 
 initial_image_size = 350
@@ -51,16 +52,21 @@ def imagenette_get_datasets(data, load_train=True, load_test=True,
     from the padded image or its horizontal flip.
     """
     (data_dir, args) = data
+
+    if args.no_data_reshape:
+        resizer = transforms.Resize((target_size, target_size))
+    else:
+        resizer = data_reshape(target_size, target_channel)
+
     if load_train:
         train_transform = transforms.Compose([
-            # transforms.RandomResizedCrop(input_size),
             transforms.Resize((input_size, input_size)),
+            data_augmentation(args.aug),
             transforms.ToTensor(),
-            data_reshape(target_size, target_channel),
+            resizer,
             transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
                                  fractional_repeat((0.229, 0.224, 0.225), target_channel)),
             ai8x.normalize(args=args),
-            # transforms.Resize(target_size)
         ])
 
         if not folder:
@@ -79,16 +85,15 @@ def imagenette_get_datasets(data, load_train=True, load_test=True,
 
     if load_test:
         test_transform = transforms.Compose([
-            # transforms.Resize(int(input_size / 0.875)),  # 224/256 = 0.875
-            # transforms.CenterCrop(input_size),
             transforms.Resize((input_size, input_size)),
+            data_augmentation(args.aug),
             transforms.ToTensor(),
-            data_reshape(target_size, target_channel),
+            resizer,
             transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
                                  fractional_repeat((0.229, 0.224, 0.225), target_channel)),
             ai8x.normalize(args=args),
-            # transforms.Resize(target_size)
         ])
+
 
         if not folder:
             test_dataset = torchvision.datasets.ImageNet(
@@ -113,7 +118,7 @@ def imagenette_get_datasets(data, load_train=True, load_test=True,
 datasets = []
 
 for size in [32]:
-    for channel in [3, 12, 48, 64]:
+    for channel in range(65):
         dic = {}
         dic['name'] = f'Imagenette_{channel}x{size}x{size}'
         dic['input'] = (channel, size, size)

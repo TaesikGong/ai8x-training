@@ -7,6 +7,7 @@ import PIL.Image
 from torchvision.datasets.utils import download_and_extract_archive, verify_str_arg
 from torchvision.datasets.vision import VisionDataset
 from utils.data_reshape import data_reshape, fractional_repeat
+from utils.data_augmentation import data_augmentation
 
 from functools import partial
 
@@ -111,16 +112,21 @@ import math
 def food101_get_datasets(data, load_train=True, load_test=True,
                          input_size=224, target_size=64, target_channel=3):
     (data_dir, args) = data
+
+    if args.no_data_reshape:
+        resizer = transforms.Resize((target_size, target_size))
+    else:
+        resizer = data_reshape(target_size, target_channel)
+
     if load_train:
         train_transform = transforms.Compose([
-            # transforms.RandomResizedCrop(input_size),
             transforms.Resize((input_size, input_size)),
+            data_augmentation(args.aug),
             transforms.ToTensor(),
-            data_reshape(target_size, target_channel),
+            resizer,
             transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
                                  fractional_repeat((0.229, 0.224, 0.225), target_channel)),
             ai8x.normalize(args=args),
-            # transforms.Resize(target_size)
         ])
 
         train_dataset = Food101(
@@ -134,15 +140,13 @@ def food101_get_datasets(data, load_train=True, load_test=True,
 
     if load_test:
         test_transform = transforms.Compose([
-            # transforms.Resize(int(input_size / 0.875)),  # 224/256 = 0.875
-            # transforms.CenterCrop(input_size),
             transforms.Resize((input_size, input_size)),
+            data_augmentation(args.aug),
             transforms.ToTensor(),
-            data_reshape(target_size, target_channel),
+            resizer,
             transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
                                  fractional_repeat((0.229, 0.224, 0.225), target_channel)),
             ai8x.normalize(args=args),
-            # transforms.Resize(target_size)
         ])
 
         test_dataset = Food101(
@@ -162,7 +166,7 @@ def food101_get_datasets(data, load_train=True, load_test=True,
 datasets = []
 
 for size in [32]:
-    for channel in [3, 12, 48, 64]:
+    for channel in range(65):
         dic = {}
         dic['name'] = f'Food101_{channel}x{size}x{size}'
         dic['input'] = (channel, size, size)

@@ -6,6 +6,7 @@ from torchvision import transforms
 import ai8x
 from datasets.custom_dataset import CustomSubsetDataset
 from utils.data_reshape import data_reshape, fractional_repeat
+from utils.data_augmentation import data_augmentation
 import torch
 
 initial_image_size = 227
@@ -35,17 +36,20 @@ def pacs_get_datasets(data, load_train=True, load_test=True,
     num_val = len(full_train_dataset) - num_train
     train_dataset, val_dataset = torch.utils.data.random_split(full_train_dataset, [num_train, num_val])
 
+    if args.no_data_reshape:
+        resizer = transforms.Resize((target_size, target_size))
+    else:
+        resizer = data_reshape(target_size, target_channel)
+
     if load_train:
         train_transform = transforms.Compose([
-            # transforms.Grayscale(num_output_channels=3),
-            # transforms.RandomResizedCrop(input_size),
             transforms.Resize((input_size, input_size)),
+            data_augmentation(args.aug),
             transforms.ToTensor(),
-            data_reshape(target_size, target_channel),
+            resizer,
             transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
                                  fractional_repeat((0.229, 0.224, 0.225), target_channel)),
             ai8x.normalize(args=args),
-            # transforms.Resize(target_size)
         ])
 
         train_dataset = CustomSubsetDataset(
@@ -55,15 +59,13 @@ def pacs_get_datasets(data, load_train=True, load_test=True,
 
     if load_test:
         test_transform = transforms.Compose([
-            # transforms.Resize(int(input_size / 0.875)),  # 224/256 = 0.875
-            # transforms.CenterCrop(input_size),
             transforms.Resize((input_size, input_size)),
+            data_augmentation(args.aug),
             transforms.ToTensor(),
-            data_reshape(target_size, target_channel),
+            resizer,
             transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
                                  fractional_repeat((0.229, 0.224, 0.225), target_channel)),
             ai8x.normalize(args=args),
-            # transforms.Resize(target_size)
         ])
 
         test_dataset = CustomSubsetDataset(
@@ -80,7 +82,7 @@ datasets = []
 
 for domain in ['P', 'A', 'C', 'S']:
     for size in [32]:
-        for channel in [3, 12, 48, 64]:
+        for channel in range(65):
             dic = {}
             dic['name'] = f'PACS-{domain}_{channel}x{size}x{size}'
             dic['input'] = (channel, size, size)
