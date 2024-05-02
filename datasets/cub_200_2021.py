@@ -17,7 +17,7 @@ def cub_get_datasets(data, load_train=True, load_test=True,
 
 
     full_train_dataset = torchvision.datasets.ImageFolder(
-        os.path.join(data_dir, 'CUB_200_2011', 'images')
+        os.path.join(data_dir, 'CUB_200_2011', 'CUB_200_2011', 'images')
     )
 
     # Split the dataset into training (80%) and validation (20%)
