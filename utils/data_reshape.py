@@ -3,6 +3,20 @@ import math
 import torchvision
 
 
+def fractional_repeat(lst, N): # used for repeating MEAN and STDEV for normalization across 3> channels
+    full_repeats = N // 3
+    remainder = N % 3
+
+    # Create the repeated list based on full repetitions
+    result = lst * full_repeats
+
+    # Append the remainder elements if needed
+    if remainder > 0:
+        result += lst[:remainder]
+
+    return result
+
+
 class data_reshape:
     """
     Fold data to increase the number of channels. An interlaced approach used in this folding

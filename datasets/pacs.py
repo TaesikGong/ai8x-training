@@ -5,7 +5,7 @@ import os
 from torchvision import transforms
 import ai8x
 from datasets.custom_dataset import CustomSubsetDataset
-from utils.data_reshape import data_reshape
+from utils.data_reshape import data_reshape, fractional_repeat
 import torch
 
 initial_image_size = 227
@@ -43,7 +43,8 @@ def pacs_get_datasets(data, load_train=True, load_test=True,
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             data_reshape(target_size, target_channel),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
+                                 fractional_repeat((0.229, 0.224, 0.225), target_channel)),
             ai8x.normalize(args=args),
             # transforms.Resize(target_size)
         ])
@@ -60,7 +61,8 @@ def pacs_get_datasets(data, load_train=True, load_test=True,
             transforms.Resize((input_size, input_size)),
             transforms.ToTensor(),
             data_reshape(target_size, target_channel),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
+                                 fractional_repeat((0.229, 0.224, 0.225), target_channel)),
             ai8x.normalize(args=args),
             # transforms.Resize(target_size)
         ])
