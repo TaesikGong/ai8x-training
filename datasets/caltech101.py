@@ -226,7 +226,7 @@ for size in [32]:
         dic = {}
         dic['name'] = f'Caltech101_{channel}x{size}x{size}'
         dic['input'] = (channel, size, size)
-        dic['output'] = list(map(str, range(200)))
+        dic['output'] = list(map(str, range(101)))
         dic['loader'] = partial(caltech101_get_datasets, load_train=True, load_test=True, input_size=initial_image_size,
                                 target_size=size, target_channel=channel)
         datasets.append(dic)

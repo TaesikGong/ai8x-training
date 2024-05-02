@@ -186,7 +186,7 @@ for size in [32]:
         dic = {}
         dic['name'] = f'Flower102_{channel}x{size}x{size}'
         dic['input'] = (channel, size, size)
-        dic['output'] = list(map(str, range(200)))
+        dic['output'] = list(map(str, range(102)))
         dic['loader'] = partial(flower102_get_datasets, load_train=True, load_test=True, input_size=initial_image_size,
                                 target_size=size, target_channel=channel)
         datasets.append(dic)
