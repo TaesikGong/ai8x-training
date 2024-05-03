@@ -115,7 +115,7 @@ class DTD(VisionDataset):
 
 initial_image_size = 640
 def dtd_get_datasets(data, load_train=True, load_test=True,
-                     input_size=224, target_size=64, target_channel=3, folder=True, augment_data=True):
+                     input_size=224, target_size=64, target_channel=3):
     """
     Load the ImageNet 2012 Classification dataset.
 
