@@ -1,26 +1,15 @@
 #!/bin/bash
 
-datasets="Caltech101" #Caltech101 Imagenette Flower102 Food101 CUB StanfordCars PACS-P PACS-A PACS-C PACS-S
-num_channels="6 " #3 12 48 64
-models="simplenet " # simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075
-reshape="--no_data_reshape" # "--no_data_reshape" or " "
-augs="000000000000001
-000000000000010
-000000000000100
-000000000001000
-000000000010000
-000000000100000
-000000001000000
-000000010000000
-000000100000000
-000001000000000
-000010000000000
-000100000000000
-001000000000000
-010000000000000
-100000000000000 "
+datasets="DTD" #Caltech101 Imagenette Flower102 CUB StanfordCars DTD ### Food101 PACS-P PACS-A PACS-C PACS-S
+num_channels="3 " #3 12 48 64
+models="mobilenetv2_075 " # simplenet ressimplenet widenet efficientnetv2 mobilenetv2_075
+# ####### convnet5
 
-#"000000000000001
+reshape="--no_data_reshape" # "--no_data_reshape" or " "
+
+augs="000000000000000"
+#"
+#000000000000001
 #000000000000010
 #000000000000100
 #000000000001000
@@ -35,17 +24,17 @@ augs="000000000000001
 #001000000000000
 #010000000000000
 #100000000000000 "
-# ####### convnet5
+#"000000000000000"
 
-### PS2
+### PS2 (Caltech101, all aug)
 max_jobs_per_gpu=1
 num_workers=8
 
-### PS3
+### PS3 (Imagenette Flower102 StanfordCars CUB, all aug)
 #max_jobs_per_gpu=2
 #num_workers=8
 
-### PS4
+### PS4 (all data, channels =3)
 #max_jobs_per_gpu=1
 #num_workers=10
 
@@ -96,6 +85,8 @@ for dataset in $datasets; do
   elif [ "$dataset" = "CUB" ]; then
     batch_size="32"
   elif [ "$dataset" = "StanfordCars" ]; then
+    batch_size="32"
+  elif [ "$dataset" = "DTD" ]; then
     batch_size="32"
   elif [ "$dataset" = "PACS-P" ]; then
     batch_size="32"
