@@ -5,8 +5,8 @@ import PIL.Image
 
 from torchvision.datasets.utils import check_integrity, download_and_extract_archive, download_url, verify_str_arg
 from torchvision.datasets import VisionDataset
-from utils.datareshape import DataReshape, fractional_repeat
-from utils.data_augmentation import data_augmentation
+from utils.data_reshape import DataReshape, fractional_repeat
+from utils.data_augmentation import DataAugmentation
 
 from functools import partial
 
@@ -142,7 +142,7 @@ def flower102_get_datasets(data, load_train=True, load_test=True,
     if load_train:
         train_transform = transforms.Compose([
             transforms.Resize((input_size, input_size)),
-            data_augmentation(args.aug),
+            DataAugmentation(args.aug),
             transforms.ToTensor(),
             resizer,
             transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
@@ -163,7 +163,7 @@ def flower102_get_datasets(data, load_train=True, load_test=True,
     if load_test:
         test_transform = transforms.Compose([
             transforms.Resize((input_size, input_size)),
-            data_augmentation(args.aug),
+            DataAugmentation(args.aug),
             transforms.ToTensor(),
             resizer,
             transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),

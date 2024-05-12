@@ -10,8 +10,8 @@ from torchvision import transforms
 import torch
 import ai8x
 import math
-from utils.datareshape import DataReshape, fractional_repeat
-from utils.data_augmentation import data_augmentation
+from utils.data_reshape import DataReshape, fractional_repeat
+from utils.data_augmentation import DataAugmentation
 from functools import partial
 
 initial_image_size = 350

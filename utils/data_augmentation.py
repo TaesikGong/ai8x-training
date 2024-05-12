@@ -205,7 +205,7 @@ augmentation_list = [
 ]
 
 
-class data_augmentation:
+class DataAugmentation:
 
     def __init__(self, aug_str):
         if len(aug_str) != 15 or any(c not in '01' for c in aug_str):
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     img, label = dataset[0]  # Get the first image and label from the dataset
 
     # Initialize your custom reshape class
-    augmenter = data_augmentation("000000000000001")  # Example: target to 64x64 image with 9 channels
+    augmenter = DataAugmentation("000000000000001")  # Example: target to 64x64 image with 9 channels
 
     # Apply the reshaping to the image
     augmented_img = augmenter(img)
