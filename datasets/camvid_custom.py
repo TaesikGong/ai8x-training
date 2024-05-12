@@ -25,6 +25,7 @@ import ai8x
 
 from utils.data_reshape import DataReshape, fractional_repeat
 from utils.data_augmentation import DataAugmentation
+from utils.coordconv import AI8XCoordConv2D
 
 
 initial_image_size=352
@@ -50,22 +51,40 @@ def camvid_get_datasets_s352(data, load_train=True, load_test=True, num_classes=
     else:
         raise ValueError(f'Unsupported num_classes {num_classes}')
 
-    if args.no_data_reshape:
-        resizer = transforms.Resize((target_size, target_size))
-    else:
-        resizer = DataReshape(target_size, target_channel)
+
+    transform_list = []
+
+    transform_list.append(transforms.Resize((input_size, input_size)))
+
+    assert (args.data_augment + args.coordconv + args.data_reshape) <= 1, "Only one or zero variable should be True"
+    if args.data_augment:
+        transform_list.append(DataAugmentation(args.aug))
+        transform_list.append(transforms.ToTensor())
+        transform_list.append(transforms.Resize((target_size, target_size)))
+        transform_list.append(transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
+                                                   fractional_repeat((0.229, 0.224, 0.225), target_channel)))
+    elif args.coordconv:
+        transform_list.append(transforms.ToTensor())
+        transform_list.append(transforms.Resize((target_size, target_size)))
+        transform_list.append(transforms.Normalize((0.485, 0.456, 0.406),
+                                                   (0.229, 0.224, 0.225)))
+        transform_list.append(AI8XCoordConv2D())
+
+    elif args.data_reshape:
+        transform_list.append(transforms.ToTensor())
+        transform_list.append(DataReshape(target_size, target_channel))
+        transform_list.append(transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
+                                                   fractional_repeat((0.229, 0.224, 0.225), target_channel)))
+    else:  #simple downsampling
+        transform_list.append(transforms.ToTensor())
+        transform_list.append(transforms.Resize((target_size, target_size)))
+        transform_list.append(transforms.Normalize((0.485, 0.456, 0.406),
+                                                   (0.229, 0.224, 0.225)))
+    transform_list.append(ai8x.normalize(args=args))
 
     
     if load_train:
-        train_transform = transforms.Compose([
-            # transforms.Resize((input_size, input_size)),
-            DataAugmentation(args.aug),
-            transforms.ToTensor(),
-            resizer,
-            transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
-                                 fractional_repeat((0.229, 0.224, 0.225), target_channel)),
-            ai8x.normalize(args=args),
-        ])
+        train_transform = transforms.Compose(transform_list)
 
         train_dataset = CamVidDataset(root_dir=os.path.join(data_dir, 'CamVid'), d_type='train',
                                       im_size=[352, 352], im_overlap=[168, 150], classes=classes,
@@ -75,15 +94,7 @@ def camvid_get_datasets_s352(data, load_train=True, load_test=True, num_classes=
 
     
     if load_test:
-        test_transform = transforms.Compose([
-            # transforms.Resize((input_size, input_size)),
-            DataAugmentation(args.aug),
-            transforms.ToTensor(),
-            resizer,
-            transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
-                                 fractional_repeat((0.229, 0.224, 0.225), target_channel)),
-            ai8x.normalize(args=args),
-        ])
+        test_transform = transforms.Compose(transform_list)
 
         test_dataset = CamVidDataset(root_dir=os.path.join(data_dir, 'CamVid'), d_type='test',
                                      im_size=[352, 352], im_overlap=[0, 54], classes=classes,

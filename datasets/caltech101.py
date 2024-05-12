@@ -9,6 +9,7 @@ from torchvision.datasets.utils import download_and_extract_archive, verify_str_
 from torchvision.datasets.vision import VisionDataset
 from utils.data_reshape import DataReshape, fractional_repeat
 from utils.data_augmentation import DataAugmentation
+from utils.coordconv import AI8XCoordConv2D
 from functools import partial
 
 initial_image_size = 300
@@ -178,22 +179,40 @@ def caltech101_get_datasets(data, load_train=True, load_test=True,
     num_val = len(full_train_dataset) - num_train
     train_dataset, val_dataset = torch.utils.data.random_split(full_train_dataset, [num_train, num_val])
 
-    if args.no_data_reshape:
-        resizer = transforms.Resize((target_size, target_size))
-    else:
-        resizer = DataReshape(target_size, target_channel)
+
+    transform_list = []
+
+    transform_list.append(transforms.Lambda(lambda x: x.convert("RGB")))  # Convert grayscale to RGB if needed
+    transform_list.append(transforms.Resize((input_size, input_size)))
+
+    assert (args.data_augment + args.coordconv + args.data_reshape) <= 1, "Only one or zero variable should be True"
+    if args.data_augment:
+        transform_list.append(DataAugmentation(args.aug))
+        transform_list.append(transforms.ToTensor())
+        transform_list.append(transforms.Resize((target_size, target_size)))
+        transform_list.append(transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
+                                                   fractional_repeat((0.229, 0.224, 0.225), target_channel)))
+    elif args.coordconv:
+        transform_list.append(transforms.ToTensor())
+        transform_list.append(transforms.Resize((target_size, target_size)))
+        transform_list.append(transforms.Normalize((0.485, 0.456, 0.406),
+                                                   (0.229, 0.224, 0.225)))
+        transform_list.append(AI8XCoordConv2D())
+
+    elif args.data_reshape:
+        transform_list.append(transforms.ToTensor())
+        transform_list.append(DataReshape(target_size, target_channel))
+        transform_list.append(transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
+                                                   fractional_repeat((0.229, 0.224, 0.225), target_channel)))
+    else:  #simple downsampling
+        transform_list.append(transforms.ToTensor())
+        transform_list.append(transforms.Resize((target_size, target_size)))
+        transform_list.append(transforms.Normalize((0.485, 0.456, 0.406),
+                                                   (0.229, 0.224, 0.225)))
+    transform_list.append(ai8x.normalize(args=args))
 
     if load_train:
-        train_transform = transforms.Compose([
-            transforms.Lambda(lambda x: x.convert("RGB")),  # Convert grayscale to RGB if needed
-            transforms.Resize((input_size, input_size)),
-            DataAugmentation(args.aug),
-            transforms.ToTensor(),
-            resizer,
-            transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
-                                 fractional_repeat((0.229, 0.224, 0.225), target_channel)),
-            ai8x.normalize(args=args),
-        ])
+        train_transform = transforms.Compose(transform_list)
 
         train_dataset = CustomSubsetDataset(
             train_dataset, transform=train_transform)
@@ -201,16 +220,7 @@ def caltech101_get_datasets(data, load_train=True, load_test=True,
         train_dataset = None
 
     if load_test:
-        test_transform = transforms.Compose([
-            transforms.Lambda(lambda x: x.convert("RGB")),  # Convert grayscale to RGB if needed
-            transforms.Resize((input_size, input_size)),
-            DataAugmentation(args.aug),
-            transforms.ToTensor(),
-            resizer,
-            transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
-                                 fractional_repeat((0.229, 0.224, 0.225), target_channel)),
-            ai8x.normalize(args=args),
-        ])
+        test_transform = transforms.Compose(transform_list)
 
         test_dataset = CustomSubsetDataset(
             val_dataset, transform=test_transform)

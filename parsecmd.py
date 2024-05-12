@@ -240,10 +240,19 @@ def get_parser(model_names, dataset_names):
 
     parser.add_argument('--aug', type=str, default='000000000000000',
                         help='augmentation for DataX project')
-    parser.add_argument('--no_data_reshape',
+
+    parser.add_argument('--data-reshape',
                                     default=False,
                                     action='store_true',
-                                    help='Disable custom data reshaping')
+                                    help='Enable custom data reshaping')
+    parser.add_argument('--data-augment',
+                                    default=False,
+                                    action='store_true',
+                                    help='Enable data augment')
+    parser.add_argument('--coordconv',
+                                    default=False,
+                                    action='store_true',
+                                    help='Enable coordconv')
 
     obj_detection_args = parser.add_argument_group('Object Detection Arguments')
     obj_detection_args.add_argument('--enable-obj-detection', '--obj-detection',
