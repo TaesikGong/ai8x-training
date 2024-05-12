@@ -23,7 +23,7 @@ from PIL import Image
 from datasets.camvid import CamVidDataset
 import ai8x
 
-from utils.data_reshape import data_reshape, fractional_repeat
+from utils.datareshape import DataReshape, fractional_repeat
 from utils.data_augmentation import data_augmentation
 
 
@@ -53,7 +53,7 @@ def camvid_get_datasets_s352(data, load_train=True, load_test=True, num_classes=
     if args.no_data_reshape:
         resizer = transforms.Resize((target_size, target_size))
     else:
-        resizer = data_reshape(target_size, target_channel)
+        resizer = DataReshape(target_size, target_channel)
 
     
     if load_train:

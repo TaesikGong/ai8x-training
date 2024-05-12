@@ -17,7 +17,7 @@ def fractional_repeat(lst, N): # used for repeating MEAN and STDEV for normaliza
     return result
 
 
-class data_reshape:
+class DataReshape:
     """
     Fold data to increase the number of channels. An interlaced approach used in this folding
     as explained in [1].
@@ -65,42 +65,6 @@ class data_reshape:
 
         return reshaped_img
 
-    # def __call__(self, img):
-    #     current_num_channel = img.shape[0]
-    #     if self.target_channel == current_num_channel and self.target_size == img.shape[1] and self.target_size == \
-    #             img.shape[2]:
-    #         return img
-    #
-    #     height_ratio = img.shape[1] / self.target_size
-    #     width_ratio = img.shape[2] / self.target_size
-    #
-    #     reshaped_img = torch.zeros((self.target_channel, self.target_size, self.target_size))
-    #
-    #     for i in range(self.target_size):
-    #         for j in range(self.target_size):
-    #             start_row = int(i * height_ratio)
-    #             end_row = int(min((i + 1) * height_ratio, img.shape[1]))  # Ensure the index does not go out of bounds
-    #             start_col = int(j * width_ratio)
-    #             end_col = int(min((j + 1) * width_ratio, img.shape[2]))  # Ensure the index does not go out of bounds
-    #
-    #             block = img[:, start_row:end_row, start_col:end_col]  # a block
-    #
-    #             b_width = end_col - start_col
-    #             b_height = end_row - start_row
-    #             samples_to_take = math.ceil(self.target_channel / 3)
-    #             step_size = b_width * b_height / samples_to_take
-    #             for c in range(samples_to_take):
-    #                 if (c + 1) * 3 > self.target_channel: # for the remaining channels that are not divided by 3
-    #                     gap = (c + 1) * 3 - self.target_channel
-    #                 else:
-    #                     gap = 0
-    #
-    #                 reshaped_img[c * 3:(c + 1) * 3, i, j] = block[:3-gap, int(c * step_size) // b_width,
-    #                                                         int(c * step_size) % b_width]  # row-major stepping
-    #
-    #     return reshaped_img
-
-
 if __name__ == "__main__":
     from torchvision import transforms, datasets
     import matplotlib.pyplot as plt
@@ -121,7 +85,7 @@ if __name__ == "__main__":
     img, label = dataset[0]  # Get the first image and label from the dataset
 
     # Initialize your custom reshape class
-    reshaper = data_reshape(target_size=32, target_channel=11)  # Example: target to 64x64 image with 9 channels
+    reshaper = DataReshape(target_size=32, target_channel=11)  # Example: target to 64x64 image with 9 channels
 
     # Apply the reshaping to the image
     reshaped_img = reshaper(img)
