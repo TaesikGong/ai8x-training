@@ -202,13 +202,14 @@ augmentation_list = [
     partial(Brightness, v=0.5),
     partial(Sharpness, v=0.5),
     partial(Cutout, v=0.5),
+    partial(Flip, v=0.5), # instead of sample_pairing, add Flip to remove randomness
 ]
 
 
 class DataAugmentation:
 
     def __init__(self, aug_str):
-        if len(aug_str) != 15 or any(c not in '01' for c in aug_str):
+        if len(aug_str) != 16 or any(c not in '01' for c in aug_str):
             raise ValueError("Input must be a 15-character string containing only 0s and 1s.")
 
         self.augs = [c == '1' for c in aug_str]
