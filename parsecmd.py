@@ -245,6 +245,10 @@ def get_parser(model_names, dataset_names):
                                     default=False,
                                     action='store_true',
                                     help='Enable custom data reshaping')
+
+    parser.add_argument('--data-reshape-method', type=str, default='dex',
+                        help='data-reshape-method for DataX project')
+
     parser.add_argument('--data-augment',
                                     default=False,
                                     action='store_true',

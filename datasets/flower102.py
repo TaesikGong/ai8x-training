@@ -156,7 +156,7 @@ def flower102_get_datasets(data, load_train=True, load_test=True,
 
     elif args.data_reshape:
         transform_list.append(transforms.ToTensor())
-        transform_list.append(DataReshape(target_size, target_channel))
+        transform_list.append(DataReshape(target_size, target_channel, args.data_reshape_method))
         transform_list.append(transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
                                                    fractional_repeat((0.229, 0.224, 0.225), target_channel)))
     else:  #simple downsampling
