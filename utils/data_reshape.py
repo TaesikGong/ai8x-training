@@ -18,13 +18,6 @@ def fractional_repeat(lst, N): # used for repeating MEAN and STDEV for normaliza
 
 
 class DataReshape:
-    """
-    Fold data to increase the number of channels. An interlaced approach used in this folding
-    as explained in [1].
-
-    [1] https://arxiv.org/pdf/2203.16528.pdf
-    """
-
     def __init__(self, target_size, target_channel):
         self.target_size = target_size
         self.target_channel = target_channel
@@ -53,7 +46,8 @@ class DataReshape:
                 block = block.reshape(img.shape[0], -1)  # Flatten the block
 
                 # Adapt number of samples based on block size
-                num_samples = min(block.shape[1], self.target_channel)
+                num_samples = math.ceil(self.target_channel/img.shape[0])
+                num_samples = min(block.shape[1], num_samples)
                 indices = torch.linspace(0, block.shape[1] - 1, steps=num_samples).long()
                 sampled_data = block[:, indices].T.flatten()
 
@@ -85,7 +79,7 @@ if __name__ == "__main__":
     img, label = dataset[0]  # Get the first image and label from the dataset
 
     # Initialize your custom reshape class
-    reshaper = DataReshape(target_size=32, target_channel=11)  # Example: target to 64x64 image with 9 channels
+    reshaper = DataReshape(target_size=32, target_channel=64)  # Example: target to 64x64 image with 9 channels
 
     # Apply the reshaping to the image
     reshaped_img = reshaper(img)
