@@ -2,6 +2,9 @@ import torch
 import math
 import torchvision
 
+from PIL import Image
+import numpy as np
+import torch
 
 def fractional_repeat(lst, N): # used for repeating MEAN and STDEV for normalization across 3> channels
     full_repeats = N // 3
@@ -17,6 +20,58 @@ def fractional_repeat(lst, N): # used for repeating MEAN and STDEV for normaliza
     return result
 
 
+
+class Downsample_PIL:
+    def __init__(self, target_size):
+        self.target_size = target_size
+
+    def __call__(self, img):
+        # Convert PIL image to a NumPy array
+        img_array = np.array(img)
+        num_channel = img_array.shape[2]  # Assuming img is in HWC format
+
+        if (self.target_size == img_array.shape[0] and
+            self.target_size == img_array.shape[1]):
+            return img
+
+        # Compute the new grid size
+        height_ratio = img_array.shape[0] / self.target_size
+        width_ratio = img_array.shape[1] / self.target_size
+
+        # Create an array of indices for sampling
+        row_indices = (np.arange(self.target_size) * height_ratio).astype(int)
+        col_indices = (np.arange(self.target_size) * width_ratio).astype(int)
+
+        # Use advanced indexing to sample the image
+        reshaped_img = img_array[row_indices[:, None], col_indices, :]
+
+        # Convert the reshaped image back to a PIL image
+        reshaped_img = reshaped_img.astype(np.uint8)
+        return Image.fromarray(reshaped_img)
+
+
+class Downsample_Tensor:
+    def __init__(self, target_size):
+        self.target_size = target_size
+
+    def __call__(self, img):
+        num_channel = img.shape[0]
+        if self.target_size == img.shape[1] and self.target_size == img.shape[2]:
+            return img
+
+        # Compute the new grid size
+        height_ratio = img.shape[1] / self.target_size
+        width_ratio = img.shape[2] / self.target_size
+
+        # Create tensors of indices for sampling
+        row_indices = torch.floor(torch.arange(self.target_size) * height_ratio).long()
+        col_indices = torch.floor(torch.arange(self.target_size) * width_ratio).long()
+
+        # Use advanced indexing to sample the image
+        reshaped_img = img[:, row_indices[:, None], col_indices]
+
+        return reshaped_img
+
 class DataReshape:
     def __init__(self, target_size, target_channel, method='dex'):
         self.target_size = target_size
@@ -29,7 +84,7 @@ class DataReshape:
             self.target_size == img.shape[2]):
             return img
 
-        if self.method == 'dex' or self.method=='random_stack':
+        if self.method == 'dex' or self.method=='random_stack' or self.method == 'skewed_sample':
             # Compute the new grid size and allocate output tensor
             height_ratio = img.shape[1] / self.target_size
             width_ratio = img.shape[2] / self.target_size
@@ -50,14 +105,17 @@ class DataReshape:
                     # Adapt number of samples based on block size
                     num_samples = math.ceil(self.target_channel/img.shape[0])
                     num_samples = min(block.shape[1], num_samples)
-                    indices = torch.linspace(0, block.shape[1] - 1, steps=num_samples).long()
+                    if self.method == 'dex':
+                        indices = torch.linspace(0, block.shape[1] - 1, steps=num_samples).long()
+                    elif self.method == 'skewed_sample':
+                        indices = torch.arange(num_samples).long()
                     sampled_data = block[:, indices].T.flatten()
 
                     # Pad if necessary to match target channels (when block.shape[1] < self.target_channels)
                     if sampled_data.size(0) < self.target_channel:
                         sampled_data = torch.cat((sampled_data, torch.zeros(self.target_channel - sampled_data.size(0))))
 
-                    if self.method == 'dex':
+                    if self.method == 'dex' or self.method =='skewed_sample':
                         reshaped_img[:, i, j] = sampled_data[:self.target_channel]
 
                     elif self.method == 'random_stack':

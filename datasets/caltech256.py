@@ -7,7 +7,7 @@ from PIL import Image
 
 from torchvision.datasets.utils import download_and_extract_archive, verify_str_arg
 from torchvision.datasets.vision import VisionDataset
-from utils.data_reshape import DataReshape, fractional_repeat
+from utils.data_reshape import DataReshape, fractional_repeat, Downsample_PIL, Downsample_Tensor
 from utils.data_augmentation import DataAugmentation
 from utils.coordconv import AI8XCoordConv2D
 from functools import partial
@@ -142,14 +142,14 @@ def caltech256_get_datasets(data, load_train=True, load_test=True,
 
     assert (args.data_augment + args.coordconv + args.data_reshape) <= 1, "Only one or zero variable should be True"
     if args.data_augment:
+        transform_list.append(Downsample_PIL(target_size))
         transform_list.append(DataAugmentation(args.aug))
         transform_list.append(transforms.ToTensor())
-        transform_list.append(transforms.Resize((target_size, target_size)))
         transform_list.append(transforms.Normalize(fractional_repeat((0.485, 0.456, 0.406), target_channel),
                                                    fractional_repeat((0.229, 0.224, 0.225), target_channel)))
     elif args.coordconv:
         transform_list.append(transforms.ToTensor())
-        transform_list.append(transforms.Resize((target_size, target_size)))
+        transform_list.append(Downsample_Tensor(target_size))
         transform_list.append(transforms.Normalize((0.485, 0.456, 0.406),
                                                    (0.229, 0.224, 0.225)))
         transform_list.append(AI8XCoordConv2D())
@@ -161,7 +161,7 @@ def caltech256_get_datasets(data, load_train=True, load_test=True,
                                                    fractional_repeat((0.229, 0.224, 0.225), target_channel)))
     else:  #simple downsampling
         transform_list.append(transforms.ToTensor())
-        transform_list.append(transforms.Resize((target_size, target_size)))
+        transform_list.append(Downsample_Tensor(target_size))
         transform_list.append(transforms.Normalize((0.485, 0.456, 0.406),
                                                    (0.229, 0.224, 0.225)))
     transform_list.append(ai8x.normalize(args=args))
