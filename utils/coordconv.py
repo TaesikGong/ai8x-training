@@ -45,7 +45,7 @@ class AI8XCoordConv2D:
 
         if self.with_r:
             rr = torch.sqrt(torch.pow(xx_channel - 0.5, 2) + torch.pow(yy_channel - 0.5, 2))
-            out = torch.cat([out, rr], dim=1)
+            out = torch.cat([out, rr], dim=0)
         return out
 
 class AddCoords(nn.Module):

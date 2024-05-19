@@ -68,7 +68,7 @@ def camvid_get_datasets_s352(data, load_train=True, load_test=True, num_classes=
         transform_list.append(Downsample_Tensor(target_size))
         transform_list.append(transforms.Normalize((0.485, 0.456, 0.406),
                                                    (0.229, 0.224, 0.225)))
-        transform_list.append(AI8XCoordConv2D())
+        transform_list.append(AI8XCoordConv2D(args.with_r))
 
     elif args.data_reshape:
         transform_list.append(transforms.ToTensor())

@@ -257,6 +257,10 @@ def get_parser(model_names, dataset_names):
                                     default=False,
                                     action='store_true',
                                     help='Enable coordconv')
+    parser.add_argument('--with-r',
+                                    default=False,
+                                    action='store_true',
+                                    help='Enable coordconv (with-r)')
 
     obj_detection_args = parser.add_argument_group('Object Detection Arguments')
     obj_detection_args.add_argument('--enable-obj-detection', '--obj-detection',
