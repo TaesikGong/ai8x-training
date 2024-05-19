@@ -21,7 +21,7 @@ def fractional_repeat(lst, N): # used for repeating MEAN and STDEV for normaliza
 
 
 
-class Downsample_PIL:
+class DownsamplePIL:
     def __init__(self, target_size):
         self.target_size = target_size
 
@@ -50,7 +50,7 @@ class Downsample_PIL:
         return Image.fromarray(reshaped_img)
 
 
-class Downsample_Tensor:
+class DownsampleTensor:
     def __init__(self, target_size):
         self.target_size = target_size
 
@@ -71,6 +71,36 @@ class Downsample_Tensor:
         reshaped_img = img[:, row_indices[:, None], col_indices]
 
         return reshaped_img
+
+class DownsampleTensorRepeat:
+    def __init__(self, target_size, target_channel):
+        self.target_size = target_size
+        self.target_channel = target_channel
+    def __call__(self, img):
+        num_channel = img.shape[0]
+        num_samples = math.ceil(self.target_channel / num_channel)
+        if self.target_size == img.shape[1] and self.target_size == img.shape[2]:
+            if self.target_channel == num_channel:
+                return img
+            else:
+                return img.repeat(num_samples, 1, 1)[:self.target_channel, :, :]
+
+
+        # Compute the new grid size
+        height_ratio = img.shape[1] / self.target_size
+        width_ratio = img.shape[2] / self.target_size
+
+        # Create tensors of indices for sampling
+        row_indices = torch.floor(torch.arange(self.target_size) * height_ratio).long()
+        col_indices = torch.floor(torch.arange(self.target_size) * width_ratio).long()
+
+        # Use advanced indexing to sample the image
+        reshaped_img = img[:, row_indices[:, None], col_indices]
+
+        # Repeat the reshaped image across the channel axis
+        repeated_img = reshaped_img.repeat(num_samples, 1, 1)
+
+        return repeated_img[:self.target_channel, :, :]
 
 class DataReshape:
     def __init__(self, target_size, target_channel, method='dex'):
@@ -193,7 +223,8 @@ if __name__ == "__main__":
     img, label = dataset[0]  # Get the first image and label from the dataset
 
     # Initialize your custom reshape class
-    reshaper = DataReshape(target_size=32, target_channel=64)  # Example: target to 64x64 image with 9 channels
+    # reshaper = DataReshape(target_size=32, target_channel=64)  # Example: target to 64x64 image with 9 channels
+    reshaper = DownsampleTensorRepeat(target_size=32, target_channel=64)  # Example: target to 64x64 image with 9 channels
 
     # Apply the reshaping to the image
     reshaped_img = reshaper(img)

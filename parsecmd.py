@@ -253,6 +253,14 @@ def get_parser(model_names, dataset_names):
                                     default=False,
                                     action='store_true',
                                     help='Enable data augment')
+    parser.add_argument('--data-repeat',
+                                    default=False,
+                                    action='store_true',
+                                    help='Enable data repeat')
+    parser.add_argument('--data-rotate',
+                                    default=False,
+                                    action='store_true',
+                                    help='Enable data rotate')
     parser.add_argument('--coordconv',
                                     default=False,
                                     action='store_true',

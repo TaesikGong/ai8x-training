@@ -5,6 +5,7 @@ from torchvision import transforms
 import PIL, PIL.ImageOps, PIL.ImageEnhance, PIL.ImageDraw
 import numpy as np
 from functools import partial
+import math
 
 
 random_mirror = True
@@ -80,6 +81,11 @@ def Rotate(img, v):  # [-30, 30]
     assert -30 <= v <= 30
     if random_mirror and random.random() > 0.5:
         v = -v
+    return img.rotate(v)
+
+def Rotate_deterministic(img, v):  # [-30, 30]
+    v = scale_to_new_range(v, -30, 30)
+    assert -30 <= v <= 30
     return img.rotate(v)
 
 
@@ -187,22 +193,39 @@ def SamplePairing(imgs):  # [0, 0.4]
 
 
 augmentation_list = [
-    partial(ShearX, v=0.5),
-    partial(ShearY, v=0.5),
-    partial(TranslateX, v=0.5),
-    partial(TranslateY, v=0.5),
-    partial(Rotate, v=0.5),
-    partial(AutoContrast, v=0.5),
-    partial(Invert, v=0.5),
-    partial(Equalize, v=0.5),
-    partial(Solarize, v=0.5),
-    partial(Posterize, v=0.5),
-    partial(Contrast, v=0.5),
-    partial(Color, v=0.5),
-    partial(Brightness, v=0.5),
-    partial(Sharpness, v=0.5),
-    partial(Cutout, v=0.5),
-    partial(Flip, v=0.5), # instead of sample_pairing, add Flip to remove randomness
+    # partial(ShearX, v=0.5),
+    # partial(ShearY, v=0.5),
+    # partial(TranslateX, v=0.5),
+    # partial(TranslateY, v=0.5),
+    # partial(Rotate, v=0.5),
+    # partial(AutoContrast, v=0.5),
+    # partial(Invert, v=0.5),
+    # partial(Equalize, v=0.5),
+    # partial(Solarize, v=0.5),
+    # partial(Posterize, v=0.5),
+    # partial(Contrast, v=0.5),
+    # partial(Color, v=0.5),
+    # partial(Brightness, v=0.5),
+    # partial(Sharpness, v=0.5),
+    # partial(Cutout, v=0.5),
+    # partial(Flip, v=0.5), # instead of sample_pairing, add Flip to remove randomness
+
+    partial(ShearX, v=1),
+    partial(ShearY, v=1),
+    partial(TranslateX, v=1),
+    partial(TranslateY, v=1),
+    partial(Rotate, v=1),
+    partial(AutoContrast, v=1),
+    partial(Invert, v=1),
+    partial(Equalize, v=1),
+    partial(Solarize, v=1),
+    partial(Posterize, v=1),
+    partial(Contrast, v=1),
+    partial(Color, v=1),
+    partial(Brightness, v=1),
+    partial(Sharpness, v=1),
+    partial(Cutout, v=1),
+    partial(Flip, v=1),  # instead of sample_pairing, add Flip to remove randomness
 ]
 
 
@@ -226,7 +249,19 @@ class DataAugmentation:
                 result_img = np.concatenate((result_img, np.array(augmented)), axis=-1)
         return result_img
 
-
+class DataRotation:
+    def __init__(self, target_channel):
+        self.target_channel = target_channel
+    def __call__(self, img):
+        img_array = np.array(img)
+        num_channel = img_array.shape[2]  # Assuming img is in HWC format
+        num_samples = math.ceil(self.target_channel / num_channel) - 1 # assume the first element is the original image
+        mag_list = np.linspace(0, 1, num_samples)
+        result_img = np.array(img)
+        for i in range(num_samples):
+            augmented = Rotate_deterministic(img, v=mag_list[i])
+            result_img = np.concatenate((result_img, np.array(augmented)), axis=-1)
+        return result_img[:, :, :self.target_channel]
 
 if __name__ == "__main__":
     import torchvision
@@ -248,7 +283,8 @@ if __name__ == "__main__":
     img, label = dataset[0]  # Get the first image and label from the dataset
 
     # Initialize your custom reshape class
-    augmenter = DataAugmentation("000000000000001")  # Example: target to 64x64 image with 9 channels
+    # augmenter = DataAugmentation("000000000000001")  # Example: target to 64x64 image with 9 channels
+    augmenter = DataRotation(target_channel=64)
 
     # Apply the reshaping to the image
     augmented_img = augmenter(img)
