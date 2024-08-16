@@ -1,39 +1,32 @@
 #!/bin/bash
 
-### PS2 (1 2 / Food101/ 3 6 18 36 64/ simplenet widenet) - stopped
-### PS2 (0 1 / Imagenette Caltech101 / 64 / simplenet widenet / tile_per_channel random_stack) - stopped
 
 #max_jobs_per_gpu=1
 #num_workers=8
 
-### PS3 (0 1 / Caltech256 / 64 / simplenet widenet efficientnetv2 mobilenetv2_075  / tile_per_channel random_stack) - stopped
-### PS3 (0 1 / Food / 6 / simplenet widenet efficientnetv2 mobilenetv2_075 / coordconv / with-r) [done]
-### PS3 (0 1 2 / Caltech256 / 6 18 36 64 / simplenet widenet / dex)
+## PS3 (2 / Imagenette Caltech101 / 64 / simplenet widenet efficientnetv2 mobilenetv2_075 / tile_per_channel) [done]
+## PS3 (0 1 2 / Imagenette Caltech101 Caltech256 Food101 / 5 / simplenet widenet efficientnetv2 mobilenetv2_075 / coordconv) [done]
+## PS3 (2 / Imagenette Caltech101 Caltech256 Food101 / 6 / simplenet widenet efficientnetv2 mobilenetv2_075 / coordconv /with-r)
+
 max_jobs_per_gpu=2
 num_workers=8
 
-### PS4 (1 2 / Food101/ 3 6 18 36 64/ efficientnetv2 mobilenetv2_075 / data-reshape_methods) - stopped
-### PS4 (0 1 / Imagenette Caltech101 / 64 / efficientnetv2 mobilenetv2_075  / tile_per_channel random_stack) - stopped
-### PS4 (0 1 2 / Imagenette / 64 / simplenet / skewed_sample) [done]
-### PS4 (0 1 2 / Imagenette Caltech101 / 6 18 36 64 / mobilenetv2_075 / dex) [done]
 #max_jobs_per_gpu=1
 #num_workers=8
-
-#TODOs....
-# CoorConv (r) update
-# run (0 1 / Imagenette / 64 / simplenet / data-repeat data-rotate)
+target_img_size=64
 
 
-seeds="0 1 2"
-datasets="Caltech256" # Imagenette Caltech101 Caltech256 Food101 Flower102 CUB StanfordCars DTD ###  PACS-P PACS-A PACS-C PACS-S
-num_channels="6 18 36 64" #3 6 18 36 64 ; : coordconv: 5 ; data-augment: 51
-models="simplenet widenet" # simplenet widenet efficientnetv2 mobilenetv2_075
+seeds="0"
+datasets="VGGFace2_FaceDetection" # Imagenette Caltech101 Caltech256 Food101 VGGFace2_FaceDetection CamVid_c33 ### Flower102 CUB StanfordCars DTD ###  PACS-P PACS-A PACS-C PACS-S
+num_channels="18" #3 6 18 36 64 ; : coordconv: 5 ; data-augment: 51
+models="facedet" # simplenet widenet efficientnetv2 mobilenetv2_075 facedet unet
 # ####### convnet5 ressimplenet
-reshape_methods="--data-reshape" # "--data-augment" "--coordconv" "--data-reshape" "--data-repeat" "--data-rotate"
+reshape_methods="--data-reshape" # "--foo"(simple downsampling) "--data-augment" "--coordconv" "--data-reshape"(dex) "--data-repeat" "--data-rotate"
 with_r="" # "--with-r" hyperparam for coordconv
-dex_configs="dex" # "dex" "tile_per_channel" "random_stack" "skewed_sample"
+dex_configs="dex" # "dex" "tile_per_channel" "random_stack" "skewed_sample" "random_sample"
 
 augs="0000000000000000" #1111111111111111
+
 #"
 #0000000000000001
 #0000000000000010
@@ -120,7 +113,7 @@ for seed in $seeds; do
             for aug in $augs; do
               for dex_config in $dex_configs; do
 
-                common_args="--seed $seed --deterministic --workers $num_workers --validation-split 0 --dataset ${dataset}_${num_channel}x32x32 --aug $aug $reshape --data-reshape-method $dex_config $with_r" #--batch-size $batch_size
+                common_args="--seed $seed --deterministic --workers $num_workers --validation-split 0 --dataset ${dataset}_${num_channel}x${target_img_size}x${target_img_size} --aug $aug $reshape --data-reshape-method $dex_config $with_r" #--batch-size $batch_size
 
                 if [ "$model" = "convnet5" ]; then
                   args=$common_args" --epochs 200 --optimizer SGD --lr 0.1 --compress policies/schedule.yaml --model ai85net5 --param-hist --pr-curves --print-freq 100 --embedding --device MAX78000 "
@@ -146,6 +139,13 @@ for seed in $seeds; do
 
                 elif [ "$model" = "mobilenetv2_075" ]; then #128
                   args=$common_args" --epochs 300 --optimizer SGD --lr 0.1 --compress policies/schedule-cifar100-mobilenetv2.yaml --model ai87netmobilenetv2cifar100_m0_75 --batch-size 128 --device MAX78002 --print-freq 100 --use-bias --qat-policy policies/qat_policy_cifar100_mobilenetv2.yaml"
+
+                elif [ "$model" = "facedet" ]; then #
+                  args=$common_args"--epochs 50 --optimizer Adam --lr 1e-3 --wd 5e-4 --model ai85tinierssdface --use-bias --momentum 0.9 --device MAX78000 --obj-detection --obj-detection-params parameters/obj_detection_params_facedet.yaml --batch-size 100 --qat-policy policies/qat_policy_facedet.yaml" # --validation-split 0.1
+
+                elif [ "$model" = "unet" ]; then #
+                  args=$common_args"--epochs 100 --optimizer Adam --lr 0.001 --wd 0 --model ai85unetlarge --use-bias --device MAX78000 --batch-size 32 --qat-policy policies/qat_policy_camvid.yaml --compress policies/schedule-camvid.yaml"
+
                 fi
 
 

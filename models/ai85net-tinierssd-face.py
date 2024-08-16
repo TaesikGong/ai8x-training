@@ -28,11 +28,12 @@ class TinySSDBaseFace(nn.Module):
     Base convolutions to produce lower-level feature maps.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+            num_channels=64, **kwargs):
         super().__init__()
 
         # Standard convolutional layers
-        self.fire1 = ai8x.FusedMaxPoolConv2dReLU(3, 16, 3, padding=1, bias=False)
+        self.fire1 = ai8x.FusedMaxPoolConv2dReLU(num_channels, 16, 3, padding=1, bias=False)
         self.fire2 = ai8x.FusedMaxPoolConv2dReLU(16, 32, 3, padding=1, bias=False)
         self.fire3 = ai8x.FusedConv2dBNReLU(32, 64, 3, padding=1, **kwargs)
 
@@ -68,6 +69,8 @@ class TinySSDBaseFace(nn.Module):
 
         fire8_feats = self.fire8(out)  # (N, 32, 56, 42)
         fire9_feats = self.fire9(fire8_feats)  # (N, 32, 28, 21)
+        # print("===========FIRE9========")
+        # print(fire9_feats.shape)
         fire10_feats = self.fire10(fire9_feats)  # (N, 32, 14, 10)
 
         return fire4_feats, fire8_feats, fire9_feats, fire10_feats
@@ -217,7 +220,7 @@ class TinierSSDFace(nn.Module):
 
         self.n_classes = num_classes
 
-        self.base = TinySSDBaseFace(**kwargs)
+        self.base = TinySSDBaseFace(num_channels, **kwargs)
         self.aux_convs = AuxiliaryConvolutions(**kwargs)
         self.pred_convs = PredictionConvolutions(self.n_classes, **kwargs)
 
@@ -225,6 +228,9 @@ class TinierSSDFace(nn.Module):
         self.device = device
         self.priors_cxcy = self.__class__.create_prior_boxes(aspect_ratios=aspect_ratios,
                                                              device=self.device)
+        # print('-------------TINIER-----------')
+        # print(self.priors_cxcy.size(0))
+        # print(self.priors_cxcy.shape)
 
     def forward(self, image):
         """
@@ -237,6 +243,8 @@ class TinierSSDFace(nn.Module):
 
         # Run auxiliary convolutions (higher level feature map generators)
         conv12_2_feats = self.aux_convs(fire10_feats)
+        # print('======CONV12_2_FEATS====')
+        # print(conv12_2_feats.shape)
 
         # Run prediction convolutions (predict offsets w.r.t prior-boxes and classes in each
         # resulting localization box)
@@ -250,9 +258,17 @@ class TinierSSDFace(nn.Module):
         Create the prior (default) boxes
         :return: prior boxes in center-size coordinates
         """
+        # origianl
+        # fmap_dims = {'fire9': (28, 21),
+        #              'conv12_2': (7, 5)}
 
-        fmap_dims = {'fire9': (28, 21),
-                     'conv12_2': (7, 5)}
+        # 32x32
+        # fmap_dims = {'fire9': (4, 4),
+        #              'conv12_2': (1, 1)}
+
+        # 64x64
+        fmap_dims = {'fire9': (8, 8),
+                     'conv12_2': (2, 2)}
 
         fmaps = list(fmap_dims.keys())
 

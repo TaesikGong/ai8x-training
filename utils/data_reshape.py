@@ -114,7 +114,7 @@ class DataReshape:
             self.target_size == img.shape[2]):
             return img
 
-        if self.method == 'dex' or self.method=='random_stack' or self.method == 'skewed_sample':
+        if self.method == 'dex' or self.method=='random_stack' or self.method == 'skewed_sample' or self.method == 'random_sample':
             # Compute the new grid size and allocate output tensor
             height_ratio = img.shape[1] / self.target_size
             width_ratio = img.shape[2] / self.target_size
@@ -139,13 +139,16 @@ class DataReshape:
                         indices = torch.linspace(0, block.shape[1] - 1, steps=num_samples).long()
                     elif self.method == 'skewed_sample':
                         indices = torch.arange(num_samples).long()
+                    elif self.method == 'random_sample':
+                        # indices = torch.randint(0, block.shape[1], (num_samples,)).long()
+                        indices = torch.sort(torch.randint(0, block.shape[1], (num_samples,)).long()).values
                     sampled_data = block[:, indices].T.flatten()
 
                     # Pad if necessary to match target channels (when block.shape[1] < self.target_channels)
                     if sampled_data.size(0) < self.target_channel:
                         sampled_data = torch.cat((sampled_data, torch.zeros(self.target_channel - sampled_data.size(0))))
 
-                    if self.method == 'dex' or self.method =='skewed_sample':
+                    if self.method == 'dex' or self.method =='skewed_sample' or self.method == 'random_sample':
                         reshaped_img[:, i, j] = sampled_data[:self.target_channel]
 
                     elif self.method == 'random_stack':
